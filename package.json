@@ -1,0 +1,13 @@
+{
+  "name": "bucks3",
+  "version": "0.0.1",
+  "private": true,
+  "devDependencies": {
+    "shadow-cljs": "2.10.22"
+  },
+  "dependencies": {
+    "papaparse": "5.3.0",
+    "react": "16.13.1",
+    "react-dom": "16.13.0"
+  }
+}

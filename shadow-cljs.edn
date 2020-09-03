@@ -1,0 +1,22 @@
+;; shadow-cljs configuration
+{:source-paths
+ ["src"]
+
+ :dependencies
+ [[cider/cider-nrepl "0.25.3"]
+  [reagent "1.0.0-alpha2"]
+  #_[re-frame "1.1.0"]
+  [cljs-bean "1.6.0"]]
+
+ :dev-http {8020 "public"}
+
+ :builds
+ {:app
+  {:target :browser
+   :output-dir "public/js"
+   :asset-path "/js"
+
+   :modules
+   {:main
+    {:entries [bucks.app]}}
+   }}}
