@@ -1,17 +1,28 @@
 (ns bucks.app
   (:require [goog.events :as events]
             [reagent.core :as r]
+            [re-frame.core :as rf]
             [reagent.dom :as rd]
-            [bucks.import.core :as import]))
+            [bucks.import.core :as import]
+            [bucks.accounts.core :as accounts]))
+
+
+(rf/reg-event-db
+ ::initialize
+ (fn [_ _]
+   (-> {}
+       (accounts/init-state))))
 
 
 (def opts {:date-format "DD/MM/YYYY"
            :header-types {"Money in" :amount-in}})
 
+
 (defn app []
   [:div.section
    [:div.container
-    [import/component opts #(js/console.log %)]]])
+    [accounts/component]
+    #_[import/component opts #(js/console.log %)]]])
 
 
 (defn mount-reagent []
@@ -19,6 +30,7 @@
 
 
 (defn ^:export run []
+  (rf/dispatch-sync [::initialize])
   (mount-reagent))
 
 
