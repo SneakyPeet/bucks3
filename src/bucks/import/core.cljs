@@ -14,18 +14,17 @@
 
 (def header-types [:date :description :amount :amount-in :amount-out :text :number :date-other])
 
+
 (defn- reset []
   (reset! *header-index nil)
-  (reset! *ignored #{})
-  (reset! *header-types {})
-  (reset! *date-format "YYYY/MM/DD"))
+  (reset! *ignored #{}))
 
 
 (defn- restart []
   (reset)
   (reset! *result {}))
 
-(prn js/NaN)
+
 (defn- parse-number [s]
   (try
     (let [n (js/parseFloat
@@ -75,10 +74,10 @@
          (map (fn [row]
                 (let [o (zipmap header row)]
                   (parse-final-row o))))
-         doall
-         (#(js/console.log %)))
+         doall)
     (catch js/Error e
-      (js/alert e))))
+      (js/alert e)
+      nil)))
 
 
 (defn- event->file [e]
@@ -100,9 +99,9 @@
 
 
 (defn- handle-file [e]
-  (restart)
   (parse' (event->file e)
           #(reset! *result (process-result %))))
+
 
 (defn- upload-button []
   [:form.file.is-primary.is-small {:id "upload-form"}
@@ -156,7 +155,7 @@
                               [:td {:key k}])))])))))]]])))
 
 
-(defn- accept-button []
+(defn- accept-button [done]
   (let [{:keys [data]} @*result
         ignored @*ignored
         header-index @*header-index
@@ -220,16 +219,32 @@
                  [:div.field.is-narrow
                   [:div.control
                    [:button.button.is-primary.is-small
-                    {:on-click #(parse-final header rows)}
-                    "Upload"]]]]])])
-          )))))
+                    {:on-click (fn []
+                                 (when-let [final (parse-final header rows)]
+                                   (done {:data final
+                                          :date-format @*date-format
+                                          :header-types @*header-types})))}
+                    "Upload"]]]]])]))))))
 
 
-(defn component []
-  [:div
-   [:div.buttons
-    [upload-button]
-    [:button.button.mt-2.ml-2.is-small {:on-click restart} "Restart"]
-    [:button.button.mt-2.is-small {:on-click reset} "Reset"]]
-   [accept-button]
-   [result-table]])
+(defn component [opts done]
+  (r/create-class
+   {:name "importer"
+    :constructor (fn []
+                   (restart)
+                   (let [{:keys [date-format header-types]} opts]
+                     (if-not (string/blank? date-format)
+                       (reset! *date-format date-format)
+                       (reset! *date-format "YYYY/MM/DD"))
+                     (if (map? header-types)
+                       (reset! *header-types header-types)
+                       (reset! *header-types {}))))
+    :reagent-render
+    (fn [_ done]
+      [:div
+       [:div.buttons
+        [upload-button]
+        [:button.button.mt-2.ml-2.is-small {:on-click restart} "Restart"]
+        [:button.button.mt-2.is-small {:on-click reset} "Reset"]]
+       [accept-button done]
+       [result-table]])}))

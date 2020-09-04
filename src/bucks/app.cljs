@@ -5,10 +5,13 @@
             [bucks.import.core :as import]))
 
 
+(def opts {:date-format "DD/MM/YYYY"
+           :header-types {"Money in" :amount-in}})
+
 (defn app []
   [:div.section
    [:div.container
-    [import/component]]])
+    [import/component opts #(js/console.log %)]]])
 
 
 (defn mount-reagent []
