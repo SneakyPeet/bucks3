@@ -6,11 +6,13 @@
 
 
 (defn app []
-  [import/component])
+  [:div.section
+   [:div.container
+    [import/component]]])
 
 
 (defn mount-reagent []
-  (rd/render [app] (js/document.getElementById "app")))
+  (rd/render app (js/document.getElementById "app")))
 
 
 (defn ^:export run []
