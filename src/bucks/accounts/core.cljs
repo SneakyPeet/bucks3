@@ -11,7 +11,7 @@
    :name ""
    :date-format nil
    :header-types {}
-   :entries []})
+   :entries {}})
 
 
 (rf/reg-sub
@@ -62,7 +62,8 @@
  (fn [db [_ id]]
    (->
     (get-in db [::accounts id])
-    (get :entries))))
+    (get :entries)
+    vals)))
 
 
 (defn- add-account []
@@ -91,7 +92,7 @@
      [:table.table.is-small
       (when-not (empty? accounts)
         [:thead
-         [:tr [:td "Accounts"] [:td]]])
+         [:tr [:td "Accounts"] [:td] [:td]]])
       [:tbody
        (->> accounts
             (map-indexed
@@ -103,6 +104,7 @@
                                                           (:id account)
                                                           :name
                                                           (.. % -target -value))}]]
+                [:td (count (:entries account))]
 
                 [:td
                  [:a.has-text-danger
