@@ -221,7 +221,7 @@
                    [:button.button.is-primary.is-small
                     {:on-click (fn []
                                  (when-let [final (parse-final header rows)]
-                                   (done {:data final
+                                   (done {:entries final
                                           :date-format @*date-format
                                           :header-types @*header-types})))}
                     "Upload"]]]]])]))))))

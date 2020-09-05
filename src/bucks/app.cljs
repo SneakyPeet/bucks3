@@ -3,15 +3,16 @@
             [reagent.core :as r]
             [re-frame.core :as rf]
             [reagent.dom :as rd]
-            [bucks.import.core :as import]
-            [bucks.accounts.core :as accounts]))
+            [bucks.accounts.core :as accounts]
+            [bucks.pages.registry :as pages]))
 
 
 (rf/reg-event-db
  ::initialize
  (fn [_ _]
    (-> {}
-       (accounts/init-state))))
+       (accounts/init-state)
+       (pages/init-state))))
 
 
 (def opts {:date-format "DD/MM/YYYY"
@@ -21,8 +22,7 @@
 (defn app []
   [:div.section
    [:div.container
-    [accounts/component]
-    #_[import/component opts #(js/console.log %)]]])
+    [pages/component]]])
 
 
 (defn mount-reagent []

@@ -1,8 +1,9 @@
 (ns bucks.accounts.core
-  (:require [re-frame.core :as rf]))
+  (:require [re-frame.core :as rf]
+            [bucks.pages.core :as pages]))
 
 (defn init-state [s]
-  (assoc s ::acounts {}))
+  (assoc s ::accounts {}))
 
 
 (defn new-account [id]
@@ -10,7 +11,7 @@
    :name ""
    :date-format nil
    :header-types {}
-   :transactions []})
+   :entries []})
 
 
 (rf/reg-sub
@@ -36,6 +37,34 @@
    (assoc-in db (concat [::accounts id] path) value)))
 
 
+(rf/reg-event-db
+ ::select-account
+ (fn [db [_ id]]
+   (assoc db ::selected-account id)))
+
+
+(rf/reg-sub
+ ::selected-account
+ (fn [db _]
+   (::selected-account db)))
+
+
+(rf/reg-sub
+ ::account-data
+ (fn [db [_ id]]
+   (->
+    (get-in db [::accounts id])
+    (dissoc :entries))))
+
+
+(rf/reg-sub
+ ::account-entries
+ (fn [db [_ id]]
+   (->
+    (get-in db [::accounts id])
+    (get :entries))))
+
+
 (defn- add-account []
   (rf/dispatch [::add-account (str (random-uuid))]))
 
@@ -45,16 +74,20 @@
     (rf/dispatch [::remove-account id])))
 
 
-(defn- update-account [id path value]
+(defn update-account [id path value]
+  (prn  id path value)
   (rf/dispatch [::update-account id
                 (if (keyword? path) [path] path)
                 value]))
 
 
+(defn- select-account [id]
+  (rf/dispatch [::select-account id]))
+
+
 (defn component []
   (let [accounts @(rf/subscribe [::accounts])]
     [:div
-     [:pre accounts]
      [:table.table.is-small
       (when-not (empty? accounts)
         [:thead
@@ -71,7 +104,13 @@
                                                           :name
                                                           (.. % -target -value))}]]
 
-                [:td [:a.has-text-danger
-                      {:on-click #(remove-account (:id account))}
-                      "remove"]]])))
+                [:td
+                 [:a.has-text-danger
+                  {:on-click #(remove-account (:id account))}
+                  "remove"]
+                 [:a
+                  {:on-click (fn []
+                               (select-account (:id account))
+                               (pages/go-to-page :import))}
+                  "import"]]])))
        [:tr [:td [:a {:on-click add-account} "+ add account"]]]]]]))
