@@ -3,7 +3,7 @@
             [reagent.core :as r]
             [re-frame.core :as rf]
             [reagent.dom :as rd]
-            [bucks.accounts.core :as accounts]
+            [bucks.accounts.state :as accounts]
             [bucks.pages.registry :as pages]))
 
 
