@@ -14,5 +14,6 @@
       :accounts [accounts/page]
       :import [accounts/import-page]
       :confirm-import [accounts/comfirm-import-page]
+      :view-account [accounts/view-account]
       [:div.has-text-danger
        "Page not defined: " (str current-page)])))

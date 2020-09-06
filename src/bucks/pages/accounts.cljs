@@ -46,7 +46,7 @@
         name (if (empty? (:name account)) "[account name missing]" (:name account))]
     [:div
      [shared/heading "Import for " name
-      [:small.is-pulled-right [:a {:on-click #(pages/go-to-page :accounts)} "back"]]]
+      [shared/back "back" #(pages/go-to-page :accounts)]]
      [importer/component account #(receive-import selected-account %)]
      #_[:pre (str (->> @(rf/subscribe [::imported-entries])
                      (apply importing/process-entries)))]
@@ -64,8 +64,7 @@
                    (clear))]
     [:div
      [shared/heading "Confirm Import"
-      [:small.is-pulled-right
-       [:a {:on-click clear} "cancel"]]]
+      [shared/back "cancel" clear ]]
 
      [:div.table-container.is-size-7
       [:table.table.is-striped
@@ -94,3 +93,25 @@
      [:button.button.is-small.is-primary
       {:on-click complete}
       "accept import"]]))
+
+
+(defn view-account []
+  (let [selected-account @(rf/subscribe [::accounts/selected-account])
+        account-name @(rf/subscribe [::accounts/account-name selected-account])
+        entries @(rf/subscribe [::accounts/account-entries selected-account])]
+    [:div
+     [shared/heading account-name
+      [shared/back "back" #(do
+                             (pages/go-to-page :accounts))]]
+     [:div.table-container.is-size-7
+      [:table.table.is-striped
+       [:thead]
+       [:tbody
+        (->> entries
+             (map-indexed
+              (fn [i {:keys [date description amount]}]
+                [:tr {:key i}
+                 [:td date]
+                 [:td description]
+                 [:td.has-text-right amount]])))]]]
+     [:pre (str entries)]]))

@@ -14,6 +14,12 @@
    :entries {}})
 
 
+(defn sort-entries [entries]
+  (->> entries
+       (sort-by :date)
+       reverse))
+
+
 (rf/reg-sub
  ::accounts
  (fn [db _]
@@ -63,7 +69,14 @@
    (->
     (get-in db [::accounts id])
     (get :entries)
-    vals)))
+    vals
+    sort-entries)))
+
+(rf/reg-sub
+ ::account-name
+ (fn [db [_ id]]
+   (let [n (get-in db [::accounts id :name])]
+     (if (empty? n) "[account name missing]" n))))
 
 
 (defn- add-account []
@@ -76,7 +89,6 @@
 
 
 (defn update-account [id path value]
-  (prn  id path value)
   (rf/dispatch [::update-account id
                 (if (keyword? path) [path] path)
                 value]))
@@ -109,10 +121,15 @@
                 [:td
                  [:a.has-text-danger
                   {:on-click #(remove-account (:id account))}
-                  "remove"]
+                  "remove "]
                  [:a
                   {:on-click (fn []
                                (select-account (:id account))
                                (pages/go-to-page :import))}
-                  "import"]]])))
+                  "import "]
+                 [:a.has-text-success
+                  {:on-click (fn []
+                               (select-account (:id account))
+                               (pages/go-to-page :view-account))}
+                  "view "]]])))
        [:tr [:td [:a {:on-click add-account} "+ add account"]]]]]]))
