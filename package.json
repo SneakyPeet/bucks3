@@ -6,6 +6,7 @@
     "shadow-cljs": "2.10.22"
   },
   "dependencies": {
+    "@yaireo/tagify": "3.18.0",
     "moment": "2.27.0",
     "papaparse": "5.3.0",
     "react": "16.13.1",
