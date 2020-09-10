@@ -8,22 +8,16 @@
             [bucks.tags.state :as tags.state]))
 
 
-(defn- tags->vals [available-tags ts]
-  (let [lookup (->> available-tags
-                    (map (juxt :id :label))
-                    (into {}))]
-    (->> ts
-         (map (fn [t] (get lookup t)))
-         (remove nil?)
-         ->js
-         js/JSON.stringify)))
+(defn- tags->vals [id-lables ts]
+  (->> ts
+       (map (fn [t] (get id-lables t)))
+       (remove nil?)
+       ->js
+       js/JSON.stringify))
 
 
-(defn- apply-color [available-tags tag]
-  (let [colors (->> available-tags
-                    (map (juxt :label :color))
-                    (into {}))
-        color (get colors (. tag -value))]
+(defn- apply-color [colors tag]
+  (let [color (get colors (. tag -value))]
     (when color
       (set! (. tag -style) (str "--tag-bg:" color
                                 ";--tag-text-color:white"
@@ -63,10 +57,12 @@
                  :or {placeholder "add tags"
                       on-change #(prn "Changed: " %)}}]
   (r/with-let [available-tags @(rf/subscribe [::tags.state/available-tags])
-               value (tags->vals available-tags t)]
+               id-lables @(rf/subscribe [::tags.state/tag-id-labels])
+               label-colors @( rf/subscribe [::tags.state/tag-label-colors])
+               value (tags->vals id-lables t)]
     [tags-r {:settings {:placeholder placeholder
-                        :whitelist (map :label available-tags)
-                        :transformTag #(apply-color available-tags %)
+                        :whitelist (vals id-lables)
+                        :transformTag #(apply-color label-colors %)
                         :dropdown {:enabled 0}}
              :value value
              :on-change (fn [e]

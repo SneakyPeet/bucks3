@@ -10,6 +10,24 @@
         (vals))))
 
 
+(rf/reg-sub
+ ::tag-id-labels
+ (fn [db _]
+   (->> (::available-tags db {})
+        (vals)
+        (map (juxt :id :label))
+        (into {}))))
+
+
+(rf/reg-sub
+ ::tag-label-colors
+ (fn [db _]
+   (->> (::available-tags db {})
+        (vals)
+        (map (juxt :label :color))
+        (into {}))))
+
+
 (rf/reg-event-db
  ::add-tag
  (fn [db [_ tag]]
