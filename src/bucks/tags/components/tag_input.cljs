@@ -8,12 +8,15 @@
             [bucks.tags.state :as tags.state]))
 
 
-(defn- tags->vals [ts]
-  (->> ts
-       (map (fn [t] {:value (:label t)
-                     :editable false}))
-       ->js
-       js/JSON.stringify))
+(defn- tags->vals [available-tags ts]
+  (let [lookup (->> available-tags
+                    (map (juxt :id :label))
+                    (into {}))]
+    (->> ts
+         (map (fn [t] (get lookup t)))
+         (remove nil?)
+         ->js
+         js/JSON.stringify)))
 
 
 (defn- apply-color [available-tags tag]
@@ -27,10 +30,13 @@
                                 ";--tag-remove-btn-color:white")))))
 
 (defn- extract-vals [e]
-  (->> (.. e -target -value)
-       js/JSON.parse
-       ->clj
-       (map :value)))
+  (let [v (.. e -target -value)]
+    (if (string/blank? v)
+      []
+      (->> v
+           js/JSON.parse
+           ->clj
+           (map :value)))))
 
 
 (defn- extract-changes [available-tags labels]
@@ -46,23 +52,26 @@
         new (->> (get items true)
                  (map #(dissoc % :new?)))]
     {:new new
-     :changes (concat old new)}))
+     :changes (->> (concat old new)
+                   (map :id))}))
 
 
 (def ^:private tags-r (r/adapt-react-class Tags))
 
+
 (defn tags [t & {:keys [placeholder on-change created]
                  :or {placeholder "add tags"
                       on-change #(prn "Changed: " %)}}]
-  (let [availalbe-tags @(rf/subscribe [::tags.state/available-tags])]
+  (r/with-let [available-tags @(rf/subscribe [::tags.state/available-tags])
+               value (tags->vals available-tags t)]
     [tags-r {:settings {:placeholder placeholder
                         :whitelist (map :label available-tags)
                         :transformTag #(apply-color available-tags %)
                         :dropdown {:enabled 0}}
-             :value (tags->vals t)
+             :value value
              :on-change (fn [e]
                           (let [labels (extract-vals e)
                                 {:keys [new changes]} (extract-changes available-tags labels)]
-                            (when-not (empty? new)
-                              (map tags.state/add-tag new))
+                            (doseq [t new]
+                              (tags.state/add-tag t))
                             (on-change changes)))}]))
