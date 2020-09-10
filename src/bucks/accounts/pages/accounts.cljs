@@ -8,11 +8,10 @@
 (defn page []
   (let [accounts @(rf/subscribe [::accounts/accounts])]
     [:div
-     [shared/heading "Accounts"]
      [shared/table
       (when-not (empty? accounts)
         [:thead
-         [:tr [:td "Accounts"] [:td] [:td]]])
+         [:tr [:td "Accounts"] [:td "Total entries"] [:td "Actions"]]])
       [:tbody
        (->> accounts
             (map-indexed

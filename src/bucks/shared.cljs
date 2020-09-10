@@ -18,3 +18,13 @@
     (map-indexed
      (fn [i c] [:<> {:key i} c])
      children)]])
+
+
+(defn table-cell-input [value & {:keys [placeholder on-change]
+                                 :or {placeholder "I need a name"
+                                      on-change prn}}]
+  (let [change (fn [e] (on-change (.. e -target -value)))]
+    [:input.input.is-small
+     {:value value
+      :placeholder placeholder
+      :on-change change}]))

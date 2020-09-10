@@ -1,8 +1,11 @@
-(ns bucks.components.tags
+(ns bucks.tags.components.tag-input
   (:require [reagent.core :as r]
+            [re-frame.core :as rf]
             [clojure.string :as string]
             [cljs-bean.core :refer [->js ->clj]]
-            ["@yaireo/tagify/dist/react.tagify" :as Tags]))
+            ["@yaireo/tagify/dist/react.tagify" :as Tags]
+            [bucks.tags.core :as tags.core]
+            [bucks.tags.state :as tags.state]))
 
 
 (defn- tags->vals [ts]
@@ -37,10 +40,7 @@
         items (->> labels
                    (map (fn [l]
                           (get existing l
-                               {:id (str (random-uuid))
-                                :label l
-                                :color "#e5e5e5"
-                                :new? true})))
+                               (assoc (tags.core/new-tag l) :new? true))))
                    (group-by :new?))
         old (get items nil)
         new (->> (get items true)
@@ -51,18 +51,18 @@
 
 (def ^:private tags-r (r/adapt-react-class Tags))
 
-(defn tags [t available-tags & {:keys [placeholder on-change created]
-                                      :or {placeholder "add tags"
-                                           created #(prn "Created: " %)
-                                           on-change #(prn "Changed: " %)}}]
-  [tags-r {:settings {:placeholder placeholder
-                      :whitelist (map :label available-tags)
-                      :transformTag #(apply-color available-tags %)
-                      :dropdown {:enabled 0}}
-           :value (tags->vals t)
-           :on-change (fn [e]
-                        (let [labels (extract-vals e)
-                              {:keys [new changes]} (extract-changes available-tags labels)]
-                          (when-not (empty? new)
-                            (created new))
-                          (on-change changes)))}])
+(defn tags [t & {:keys [placeholder on-change created]
+                 :or {placeholder "add tags"
+                      on-change #(prn "Changed: " %)}}]
+  (let [availalbe-tags @(rf/subscribe [::tags.state/available-tags])]
+    [tags-r {:settings {:placeholder placeholder
+                        :whitelist (map :label available-tags)
+                        :transformTag #(apply-color available-tags %)
+                        :dropdown {:enabled 0}}
+             :value (tags->vals t)
+             :on-change (fn [e]
+                          (let [labels (extract-vals e)
+                                {:keys [new changes]} (extract-changes available-tags labels)]
+                            (when-not (empty? new)
+                              (map tags.state/add-tag new))
+                            (on-change changes)))}]))
