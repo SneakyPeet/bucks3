@@ -51,6 +51,7 @@
                             :amount (parse-number v)
                             :amount-in (parse-number v)
                             :amount-out (parse-number v)
+                            :balance (parse-number v)
                             :date (parse-date v)
                             v)]
                     [t v])))))
