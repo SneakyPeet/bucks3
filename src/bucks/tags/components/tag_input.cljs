@@ -53,13 +53,13 @@
 (def ^:private tags-r (r/adapt-react-class Tags))
 
 
-(defn tags [t & {:keys [placeholder on-change created]
+(defn tags [t & {:keys [placeholder on-change]
                  :or {placeholder "add tags"
                       on-change #(prn "Changed: " %)}}]
-  (r/with-let [available-tags @(rf/subscribe [::tags.state/available-tags])
-               id-lables @(rf/subscribe [::tags.state/tag-id-labels])
-               label-colors @( rf/subscribe [::tags.state/tag-label-colors])
-               value (tags->vals id-lables t)]
+  (let [available-tags @(rf/subscribe [::tags.state/available-tags])
+        id-lables @(rf/subscribe [::tags.state/tag-id-labels])
+        label-colors @( rf/subscribe [::tags.state/tag-label-colors])
+        value (tags->vals id-lables t)]
     [tags-r {:settings {:placeholder placeholder
                         :whitelist (vals id-lables)
                         :transformTag #(apply-color label-colors %)

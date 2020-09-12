@@ -8,10 +8,11 @@
 (defn page []
   (let [accounts @(rf/subscribe [::accounts/accounts])]
     [:div
+     #_[:pre (with-out-str (cljs.pprint/pprint accounts))]
      [shared/table
       (when-not (empty? accounts)
         [:thead
-         [:tr [:td "Accounts"] [:td "Total entries"] [:td "Actions"]]])
+         [:tr [:td "Accounts"] [:td "Balance"] [:td "Total entries"] [:td "Actions"]]])
       [:tbody
        (->> accounts
             (map-indexed
@@ -23,6 +24,7 @@
                                                           (:id account)
                                                           :name
                                                           (.. % -target -value))}]]
+                [:td (:current-balance account)]
                 [:td (count (:entries account))]
 
                 [:td

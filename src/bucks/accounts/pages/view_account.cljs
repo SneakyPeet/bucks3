@@ -2,7 +2,8 @@
   (:require [re-frame.core :as rf]
             [bucks.accounts.state :as accounts]
             [bucks.shared :as shared]
-            [bucks.pages.core :as pages]))
+            [bucks.pages.core :as pages]
+            [bucks.tags.components.tag-input :as tag-input]))
 
 
 (defn page []
@@ -15,13 +16,23 @@
                              (pages/go-to-page :accounts))]]
      [:div.table-container.is-size-7
       [:table.table.is-striped
-       [:thead]
+       [:thead
+        [:tr [:th "Date"] [:th "Description"] [:th "Amount"] [:th "Balance"] [:th "Note"] [:th "Tags"]]]
        [:tbody
         (->> entries
              (map-indexed
-              (fn [i {:keys [date description amount]}]
+              (fn [i {:keys [id date description amount calculated-balance note tags]}]
                 [:tr {:key i}
                  [:td date]
                  [:td description]
-                 [:td.has-text-right amount]])))]]]
+                 [:td.has-text-right amount]
+                 [:td calculated-balance]
+                 [:td [shared/table-cell-input note
+                       :placeholder "note"
+                       :on-change  #(accounts/update-entry-note
+                                     selected-account id %)]]
+                 [:td [tag-input/tags tags
+                       :placeholder "tags"
+                       :on-change #(accounts/update-entry-tags
+                                    selected-account id %)]]])))]]]
      [:pre (str entries)]]))

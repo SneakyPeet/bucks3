@@ -77,7 +77,8 @@
     (get-in db [::accounts id])
     (get :entries)
     vals
-    accounts/sort-entries)))
+    accounts/sort-entries
+    reverse)))
 
 
 (rf/reg-sub
@@ -90,11 +91,36 @@
 (rf/reg-event-db
  ::add-entries
  (fn [db [_ account-id e]]
-   (let [entries (->> e
-                      (map (juxt :id identity))
-                      (into {}))]
-     (update-in db [::accounts account-id :entries] merge entries))))
+   (let [{:keys [entries current-balance] :as d}
+         (->> (get-in db [::accounts account-id :entries])
+              vals
+              (into e)
+              accounts/re-balance)
+         entries-m (->> entries
+                        (map (juxt :id identity))
+                        (into {}))]
+     (-> db
+         (assoc-in [::accounts account-id :entries] entries-m)
+         (assoc-in [::accounts account-id :current-balance] current-balance)))))
 
 
 (defn add-entries [account-id e]
   (rf/dispatch [::add-entries account-id e]))
+
+
+(rf/reg-event-db
+ ::update-entry
+ (fn [db [_ account-id entry-id k v]]
+   (assoc-in db [::accounts account-id :entries entry-id k] v)))
+
+
+(defn- update-entry [account-id entry-id k v]
+  (rf/dispatch [::update-entry account-id entry-id k v]))
+
+
+(defn update-entry-note [account-id entry-id v]
+  (update-entry account-id entry-id :note v))
+
+
+(defn update-entry-tags [account-id entry-id v]
+  (update-entry account-id entry-id :tags (set v)))
