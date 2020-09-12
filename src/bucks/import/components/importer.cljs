@@ -60,11 +60,15 @@
 
 (defn- parse-final [header rows]
   (try
-    (->> rows
-         (map (fn [row]
-                (let [o (zipmap header row)]
-                  (parse-final-row o))))
-         doall)
+    (let [rows (->> rows
+                    (map-indexed (fn [i row]
+                                   (let [o (zipmap header row)]
+                                     (assoc (parse-final-row o) :import-index i))))
+                    doall)
+          desc? (> (:date (first rows)) (:date (last rows)))
+          total (dec (count rows))
+          index (if desc? #(- total %) identity)]
+      (map #(update % :import-index index) rows))
     (catch js/Error e
       (js/alert e)
       nil)))
@@ -179,6 +183,8 @@
                [:div.column
                 [:h2.heading "Please match your columns"]
                 [:ul.content.is-size-7
+                 [:li "Import assumes entries are ordered by date (either ascending or decending)"]
+                 [:li "Numbers should be formatted as " [:i "236543.45"]]
                  [:li [:strong "Required"]
                   [:ul.mt-0
                    [:li [:strong "Date: "] "Transaction Date. Remember to choose the correct date format."]
@@ -188,7 +194,7 @@
                      [:li [:strong "Amount: "] "A positive or negative value"]
                      [:li [:strong "Amount in "] "and " [:strong "Amount out. "]
                       "Both should be zero or more."]
-                     [:li "Formatted as " [:i "236543.45"]]]]]]
+                     ]]]]
                  [:li [:strong "Optional"]
                   [:ul.mt-0
                    [:li [:strong "Balance: "]

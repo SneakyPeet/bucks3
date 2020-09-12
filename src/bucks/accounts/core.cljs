@@ -14,5 +14,5 @@
 
 (defn sort-entries [entries]
   (->> entries
-       (sort-by :date)
+       (sort-by (juxt :date :import-index))
        reverse))

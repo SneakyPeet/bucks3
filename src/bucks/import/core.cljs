@@ -19,6 +19,7 @@
                :note ""
                :tags #{}))))
 
+
 (defn- comparable [e]
   (select-keys e [:date :amount :balance :description]))
 
@@ -45,5 +46,5 @@
                       (map #(assoc % :existing? true)))]
     (->> new-entries
          (into existing)
-         (sort-by (juxt :date :description :amount))
+         (sort-by (juxt :import-index))
          reverse)))
