@@ -15,7 +15,9 @@
         (assoc :amount amount
                :balance balance
                :import-id import-id
-               :id (str (random-uuid))))))
+               :id (str (random-uuid))
+               :note ""
+               :tags #{}))))
 
 (defn- comparable [e]
   (select-keys e [:date :amount :balance :description]))
