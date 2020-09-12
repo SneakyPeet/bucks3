@@ -7,9 +7,10 @@
             [bucks.import.components.importer :as importer]))
 
 
-(defn- receive-import [id {:keys [entries date-format header-types]}]
+(defn- receive-import [id {:keys [entries date-format header-types header-index]}]
   (accounts/update-account id :date-format date-format)
   (accounts/update-account id :header-types header-types)
+  (accounts/update-account id :header-index header-index)
   (import/import-entries id entries)
   (pages/go-to-page :confirm-import))
 

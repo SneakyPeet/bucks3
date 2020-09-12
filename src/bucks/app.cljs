@@ -15,10 +15,6 @@
        (pages/init-state))))
 
 
-(def opts {:date-format "DD/MM/YYYY"
-           :header-types {"Money in" :amount-in}})
-
-
 (defn app []
   [:div.section
    [:div.container

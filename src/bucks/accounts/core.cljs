@@ -8,6 +8,7 @@
    :name ""
    :date-format nil
    :header-types {}
+   :header-index 0
    :entries {}})
 
 

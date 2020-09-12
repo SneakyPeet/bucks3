@@ -7,7 +7,7 @@
 
 
 (defonce *result (r/atom {}))
-(defonce *header-index (r/atom nil))
+(defonce *header-index (r/atom 0))
 (defonce *ignored (r/atom #{}))
 (defonce *header-types (r/atom {}))
 (defonce *date-format (r/atom "YYYY/MM/DD"))
@@ -16,7 +16,6 @@
 
 
 (defn- reset []
-  (reset! *header-index nil)
   (reset! *ignored #{}))
 
 
@@ -223,7 +222,8 @@
                                  (when-let [final (parse-final header rows)]
                                    (done {:entries final
                                           :date-format @*date-format
-                                          :header-types @*header-types})))}
+                                          :header-types @*header-types
+                                          :header-index @*header-index})))}
                     "Upload"]]]]])]))))))
 
 
@@ -232,13 +232,16 @@
    {:name "importer"
     :constructor (fn []
                    (restart)
-                   (let [{:keys [date-format header-types]} opts]
+                   (let [{:keys [date-format header-types header-index]} opts]
                      (if-not (string/blank? date-format)
                        (reset! *date-format date-format)
                        (reset! *date-format "YYYY/MM/DD"))
                      (if (map? header-types)
                        (reset! *header-types header-types)
-                       (reset! *header-types {}))))
+                       (reset! *header-types {}))
+                     (if (integer? header-index)
+                       (reset! *header-index header-index)
+                       (reset! *header-index 0))))
     :reagent-render
     (fn [_ done]
       [:div
