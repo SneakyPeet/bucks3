@@ -24,12 +24,14 @@
   (reset! *result {}))
 
 
-(defn- parse-number [s]
+(defn- parse-to-cents [s]
   (try
-    (let [n (js/parseFloat
-             (string/replace
-              (string/replace s #"," "")
-              #"\s" ""))]
+    (let [n
+          (-> s
+              (string/replace #"\s" "")
+              (string/replace #"," "")
+              (string/replace #"\." "")
+              js/parseInt)]
       (when (js/isNaN n)
         (throw (js/Error. (str "Cannot convert to number: " s))))
       n)
@@ -48,10 +50,10 @@
               (let [t (get @*header-types h)]
                 (when t
                   (let [v (case t
-                            :amount (parse-number v)
-                            :amount-in (parse-number v)
-                            :amount-out (parse-number v)
-                            :balance (parse-number v)
+                            :amount (parse-to-cents v)
+                            :amount-in (parse-to-cents v)
+                            :amount-out (parse-to-cents v)
+                            :balance (parse-to-cents v)
                             :date (parse-date v)
                             v)]
                     [t v])))))
