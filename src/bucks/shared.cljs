@@ -1,4 +1,8 @@
-(ns bucks.shared)
+(ns bucks.shared
+  (:require ["@yaireo/tagify/dist/react.tagify" :as Tags]
+            [clojure.string :as string]
+            [reagent.core :as r]
+            [cljs-bean.core :refer [->clj]]))
 
 
 (defn heading [& s]
@@ -28,3 +32,29 @@
      {:value value
       :placeholder placeholder
       :on-change change}]))
+
+
+
+(def ^:private tags-r (r/adapt-react-class Tags))
+
+(defn select [options value {:keys [placeholder on-change]
+                             :or {placeholder "Please select"
+                                  on-change prn}}]
+  (let [o-map (->> options
+                   (map (juxt :label :value))
+                   (into {}))]
+    [tags-r {:settings {:placeholder placeholder
+                        :mode "select"
+                        :whitelist (->> options
+                                        (map :label))}
+             :value value
+             :on-change (fn [e]
+                          (let [v (.. e -target -value)]
+                            (when-not (string/blank? v)
+                              (let [v' (->> (js/JSON.parse v)
+                                            ->clj
+                                            first
+                                            :value
+                                            (get o-map))]
+                                (when-not (nil? v')
+                                  (on-change v'))))))}]))

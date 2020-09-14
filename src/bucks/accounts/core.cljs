@@ -1,6 +1,7 @@
 (ns bucks.accounts.core
   (:require [re-frame.core :as rf]
-            [bucks.pages.core :as pages]))
+            [bucks.pages.core :as pages]
+            [bucks.options.core :as opts]))
 
 
 (defn new-account [id]
@@ -10,7 +11,8 @@
    :header-types {}
    :header-index 0
    :current-balance 0
-   :entries {}})
+   :entries {}
+   :currency (:base-currency opts/default-options)})
 
 
 (defn sort-entries [entries]

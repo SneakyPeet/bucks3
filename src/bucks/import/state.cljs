@@ -23,6 +23,41 @@
    (::imported-entries db)))
 
 
+(rf/reg-sub
+ ::exchange-rates
+ (fn [db [_ source destination]]
+   (get-in db [::exchange-rates source destination] {})))
+
+
+(rf/reg-event-db
+ ::set-exchange-rate
+ (fn [db [_ source destination date rate]]
+   (assoc-in db [::exchange-rates source destination date] rate)))
+
+
+(defn set-exchange-rate [source destination date rate]
+  (rf/dispatch [::set-exchange-rate source destination date rate]))
+
+
+(rf/reg-sub
+ ::exchange-rate-error
+ (fn [db _]
+   (get db ::exchange-rate-error)))
+
+
+(rf/reg-event-db
+ ::set-exchange-rate-error
+ (fn [db [_ err]]
+   (assoc db ::exchange-rate-error err)))
+
+
+(defn set-exchange-rate-error [err]
+  (rf/dispatch [::set-exchange-rate-error err]))
+
+(defn clear-exchange-rate-error []
+  (set-exchange-rate-error nil))
+
+
 (rf/reg-event-db
  ::finish-import
  (fn [db _]

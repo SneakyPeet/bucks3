@@ -4,13 +4,15 @@
             [re-frame.core :as rf]
             [reagent.dom :as rd]
             [bucks.accounts.state :as accounts]
-            [bucks.pages.registry :as pages]))
+            [bucks.pages.registry :as pages]
+            [bucks.options.state :as options]))
 
 
 (rf/reg-event-db
  ::initialize
  (fn [_ _]
    (-> {}
+       (options/init-state)
        (accounts/init-state)
        (pages/init-state))))
 

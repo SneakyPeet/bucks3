@@ -5,7 +5,8 @@
             [bucks.import.pages.import :as import]
             [bucks.import.pages.confirm :as confirm-import]
             [bucks.accounts.pages.view-account :as view-account]
-            [bucks.tags.pages.manage :as manage-tags]))
+            [bucks.tags.pages.manage :as manage-tags]
+            [bucks.options.pages.manage :as options]))
 
 (defn init-state [state]
   (assoc state ::pages/current-page :accounts))
@@ -13,7 +14,9 @@
 
 (def menu-items
   {:accounts "accounts"
-   :manage-tags "tags"})
+   :manage-tags "tags"
+   :manage-options "options"})
+
 
 (defn- wrap-menu [c]
   (let [current-page @(rf/subscribe [::pages/current-page])]
@@ -37,5 +40,6 @@
       :confirm-import [confirm-import/page]
       :view-account [view-account/page]
       :manage-tags [wrap-menu [manage-tags/page]]
+      :manage-options [wrap-menu [options/page]]
       [:div.has-text-danger
        "Page not defined: " (str current-page)])))

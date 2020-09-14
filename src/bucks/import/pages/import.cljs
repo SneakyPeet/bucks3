@@ -11,6 +11,7 @@
   (accounts/update-account id :date-format date-format)
   (accounts/update-account id :header-types header-types)
   (accounts/update-account id :header-index header-index)
+  (import/clear-exchange-rate-error)
   (import/import-entries id entries)
   (pages/go-to-page :confirm-import))
 
