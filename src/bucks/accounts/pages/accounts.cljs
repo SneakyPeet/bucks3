@@ -12,7 +12,7 @@
      [shared/table
       (when-not (empty? accounts)
         [:thead
-         [:tr [:td "Accounts"] [:td "Balance"] [:td "Total entries"] [:td "Actions"]]])
+         [:tr [:td "Accounts"] [:td "Currency"] [:td "Balance"] [:td "Total entries"] [:td "Actions"]]])
       [:tbody
        (->> accounts
             (map-indexed
