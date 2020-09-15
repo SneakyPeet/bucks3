@@ -17,16 +17,17 @@
      [:div.table-container.is-size-7
       [:table.table.is-striped
        [:thead
-        [:tr [:th "Date"] [:th "Description"] [:th "Amount"] [:th "Balance"] [:th "Note"] [:th "Tags"]]]
+        [:tr [:th "Date"] [:th "Description"] [:th "Amount"] [:th "Balance"] [:th "Exchange Rate"] [:th "Note"] [:th "Tags"]]]
        [:tbody
         (->> entries
              (map-indexed
-              (fn [i {:keys [id date description amount calculated-balance note tags]}]
+              (fn [i {:keys [id date description amount calculated-balance exchange-rate note tags]}]
                 [:tr {:key i}
                  [:td date]
                  [:td description]
                  [:td.has-text-right amount]
                  [:td calculated-balance]
+                 [:td.has-text-right exchange-rate]
                  [:td [shared/table-cell-input note
                        :placeholder "note"
                        :on-change  #(accounts/update-entry-note

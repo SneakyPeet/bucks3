@@ -38,17 +38,19 @@
                 (pages/go-to-page :accounts)
                 (import/finish-import))
         complete (fn []
-                   (import/confirm-entries selected-account imported)
+                   (import/confirm-entries selected-account exchange-rates imported)
                    (clear))]
     [:div
      [shared/heading "Confirm Import"
       [shared/back "cancel" clear ]]
 
      (when-not same-currency?
-       [:div
-        [:p "Account currency differs from base currency. Click to import from fixer.io."]
-        [:div base-currency "|" account-currency]
-        [:div.buttons [:button.button.is-primary.is-small
+       [:div.content
+        [:p.has-text-weight-bold base-currency " | " account-currency]
+        [:p "Account currency differs from base currency. Click to import from "
+         [:a {:href "https://fixer.io/" :target "_blank"} "fixer.io"]". Api access key can be set in the options menu."]
+
+        [:div.buttons [:button.button.is-danger.is-small
                        {:on-click update-exchange-rates}
                        "Update exchange rates"]]
         (when exchange-rate-err

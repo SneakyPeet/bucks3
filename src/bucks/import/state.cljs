@@ -68,10 +68,12 @@
   (rf/dispatch [::finish-import]))
 
 
-(defn confirm-entries [account-id entries]
+(defn confirm-entries [account-id exchange-rates entries]
   (let [entries (->> entries
                      (filter (fn [e]
                                (and (not (:existing? e))
-                                    (not (:duplicate? e))))))]
+                                    (not (:duplicate? e)))))
+                     (map (fn [e]
+                            (assoc e :exchange-rate (get exchange-rates (:date e) 1)))))]
     (when-not (empty? entries)
       (accounts/add-entries account-id entries))))
