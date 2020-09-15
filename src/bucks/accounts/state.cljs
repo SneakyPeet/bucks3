@@ -91,7 +91,7 @@
 (rf/reg-event-db
  ::add-entries
  (fn [db [_ account-id e]]
-   (let [{:keys [entries current-balance] :as d}
+   (let [{:keys [entries current-balance current-balance-base] :as d}
          (->> (get-in db [::accounts account-id :entries])
               vals
               (into e)
@@ -101,7 +101,8 @@
                         (into {}))]
      (-> db
          (assoc-in [::accounts account-id :entries] entries-m)
-         (assoc-in [::accounts account-id :current-balance] current-balance)))))
+         (assoc-in [::accounts account-id :current-balance] current-balance)
+         (assoc-in [::accounts account-id :current-balance-base] current-balance-base)))))
 
 
 (defn add-entries [account-id e]

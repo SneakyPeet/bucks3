@@ -20,19 +20,32 @@
        (sort-by (juxt :date :import-index))))
 
 
+(defn calculate-exchange-value [exchange-rate v]
+  (Math/round (/ v exchange-rate)))
+
+
 (defn re-balance [entries]
   (loop [current-balance 0
+         exchange-balance 0
          result []
          entries (sort-entries entries)]
     (if (empty? entries)
       {:current-balance current-balance
+       :current-balance-base exchange-balance
        :entries result}
-      (let [{:keys [balance amount] :as entry} (first entries)
+      (let [{:keys [balance amount exchange-rate] :as entry} (first entries)
             entry-balance (if (= :not-provided balance)
                             (+ current-balance amount)
                             balance)
-            entry (assoc entry :calculated-balance entry-balance)]
-
+            entry (assoc entry :calculated-balance entry-balance)
+            entry (if (= 1 exchange-rate)
+                    (assoc entry
+                           :calculated-balance-base entry-balance
+                           :amount-base amount)
+                    (assoc entry
+                           :calculated-balance-base (calculate-exchange-value exchange-rate entry-balance)
+                           :amount-base (calculate-exchange-value exchange-rate amount)))]
         (recur entry-balance
+               (:calculated-balance-base entry)
                (conj result entry)
                (rest entries))))))
