@@ -5,16 +5,25 @@
             [reagent.dom :as rd]
             [bucks.accounts.state :as accounts]
             [bucks.pages.registry :as pages]
-            [bucks.options.state :as options]))
+            [bucks.options.state :as options]
+            [akiroz.re-frame.storage :refer [reg-co-fx!]]))
 
 
-(rf/reg-event-db
+(reg-co-fx! :bucks3
+            {:fx :localstore
+             :cofx :localstore})
+
+
+(rf/reg-event-fx
  ::initialize
- (fn [_ _]
-   (-> {}
-       (options/init-state)
-       (accounts/init-state)
-       (pages/init-state))))
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [localstore]} _]
+   {:localstore localstore
+    :db (-> {}
+            (options/init-state localstore)
+            (accounts/init-state)
+            (pages/init-state))}))
+
 
 
 (defn app []

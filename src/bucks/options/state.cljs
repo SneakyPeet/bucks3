@@ -3,14 +3,18 @@
             [re-frame.core :as rf]))
 
 
-(defn init-state [db]
-  (assoc db ::options opts/default-options))
+(defn init-state [db localstore]
+  (assoc db ::options
+         (merge opts/default-options
+                (:options localstore))))
 
 
-(rf/reg-event-db
+(rf/reg-event-fx
  ::set-option
- (fn [db [_ k v]]
-   (assoc-in db [::options k] v)))
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ k v]]
+   {:localstore (assoc-in localstore [:options k] v)
+    :db (assoc-in db [::options k] v)}))
 
 
 (defn set-option [k v]
