@@ -16,7 +16,7 @@
                :balance balance
                :import-id import-id
                :id (str (random-uuid))
-               :note ""
+               :note (:note entry "")
                :tags #{}))))
 
 

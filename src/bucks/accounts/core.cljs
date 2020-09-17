@@ -49,3 +49,12 @@
                (:calculated-balance-base entry)
                (conj result entry)
                (rest entries))))))
+
+
+(defn entries->saveable [entries]
+  (->> entries
+       vals
+       (map #(select-keys % [:amount :balance :import-id :id :note :tags :date :description :import-index
+                             :exchange-rate]))
+       (map (juxt :id identity))
+       (into {})))

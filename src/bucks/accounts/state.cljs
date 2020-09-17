@@ -3,8 +3,20 @@
             [bucks.accounts.core :as accounts]))
 
 
-(defn init-state [s]
-  (assoc s ::accounts {}))
+(defn init-state [s localstore]
+  (assoc s ::accounts (->> localstore
+                           :accounts
+                           (map (fn [[aid v]]
+                                  (let [{:keys [entries] :as d} (->> (:entries v)
+                                                                     vals
+                                                                     (accounts/re-balance))
+                                        account (-> (accounts/new-account aid)
+                                                    (merge v (dissoc d :entries))
+                                                    (assoc :entries (->> entries
+                                                                         (map (juxt :id identity))
+                                                                         (into {}))))]
+                                    [aid account])))
+                           (into {}))))
 
 
 (rf/reg-sub
@@ -13,20 +25,24 @@
    (vals (::accounts db))))
 
 
-(rf/reg-event-db
+(rf/reg-event-fx
  ::add-account
- (fn [db [_ id]]
-   (assoc-in db [::accounts id] (accounts/new-account id))))
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ id]]
+   {:db (assoc-in db [::accounts id] (accounts/new-account id))
+    :localstore (assoc-in localstore [:accounts id] (accounts/new-account id))}))
 
 
 (defn add-account []
   (rf/dispatch [::add-account (str (random-uuid))]))
 
 
-(rf/reg-event-db
+(rf/reg-event-fx
  ::remove-account
- (fn [db [_ id]]
-   (update db ::accounts dissoc id)))
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [localstore db]} [_ id]]
+   {:db (update db ::accounts dissoc id)
+    :localstore (update localstore :accounts dissoc id)}))
 
 
 (defn remove-account [id]
@@ -34,10 +50,12 @@
     (rf/dispatch [::remove-account id])))
 
 
-(rf/reg-event-db
+(rf/reg-event-fx
  ::update-account
- (fn [db [_ id path value]]
-   (assoc-in db (concat [::accounts id] path) value)))
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ id path value]]
+   {:db (assoc-in db (concat [::accounts id] path) value)
+    :localstore (assoc-in localstore (concat [:accounts id] path) value)}))
 
 
 (defn update-account [id path value]
@@ -88,10 +106,11 @@
      (if (empty? n) "[account name missing]" n))))
 
 
-(rf/reg-event-db
+(rf/reg-event-fx
  ::add-entries
- (fn [db [_ account-id e]]
-   (let [{:keys [entries current-balance current-balance-base] :as d}
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ account-id e]]
+   (let [{:keys [entries] :as d}
          (->> (get-in db [::accounts account-id :entries])
               vals
               (into e)
@@ -99,20 +118,22 @@
          entries-m (->> entries
                         (map (juxt :id identity))
                         (into {}))]
-     (-> db
-         (assoc-in [::accounts account-id :entries] entries-m)
-         (assoc-in [::accounts account-id :current-balance] current-balance)
-         (assoc-in [::accounts account-id :current-balance-base] current-balance-base)))))
+     {:db (-> db
+              (update-in [::acounts account-id] merge d)
+              (assoc-in [::accounts account-id :entries] entries-m))
+      :localstore (assoc-in localstore [:accounts account-id :entries] (accounts/entries->saveable entries-m))})))
 
 
 (defn add-entries [account-id e]
   (rf/dispatch [::add-entries account-id e]))
 
 
-(rf/reg-event-db
+(rf/reg-event-fx
  ::update-entry
- (fn [db [_ account-id entry-id k v]]
-   (assoc-in db [::accounts account-id :entries entry-id k] v)))
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ account-id entry-id k v]]
+   {:db (assoc-in db [::accounts account-id :entries entry-id k] v)
+    :localstore (assoc-in localstore [:accounts account-id :entries entry-id k] v)}))
 
 
 (defn- update-entry [account-id entry-id k v]

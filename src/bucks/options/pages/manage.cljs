@@ -18,4 +18,13 @@
        [:input.input {:value fixer-api-key
                       :on-change #(options/set-option :fixer-api-key (.. % -target -value))}]]
       [:div.help "Use " [:a {:href "https://fixer.io/" :target "_blank"} "fixer.io"]
-       " for syncing exchange rates. Free account is sufficient."]]]))
+       " for syncing exchange rates. Free account is sufficient."]]
+     [:div.field
+      [:label.label "Actions"]
+      [:div.control
+       [:button.button.is-danger
+        {:on-click (fn []
+                     (when (js/confirm "This cannot be un done")
+                       (rf/dispatch [:bucks.app/clean])))}
+        "CLEAR DATA"]]
+      ]]))

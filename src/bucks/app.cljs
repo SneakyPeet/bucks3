@@ -21,9 +21,16 @@
    {:localstore localstore
     :db (-> {}
             (options/init-state localstore)
-            (accounts/init-state)
+            (accounts/init-state localstore)
             (pages/init-state))}))
 
+
+(rf/reg-event-fx
+ ::clean
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [localstore]} [_ k v]]
+   {:localstore nil
+    :dispatch [::initialize]}))
 
 
 (defn app []
