@@ -3,10 +3,13 @@
             [bucks.pages.core :as pages]
             [bucks.options.core :as opts]))
 
+(def account-types #{:investment :budget})
+
 
 (defn new-account [id]
   {:id id
    :name ""
+   :account-type :investment
    :date-format nil
    :header-types {}
    :header-index 0
