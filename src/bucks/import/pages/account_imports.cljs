@@ -2,7 +2,10 @@
   (:require [re-frame.core :as rf]
             [bucks.accounts.state :as accounts]
             [bucks.accounts.components.heading :as account.heading]
-            [bucks.shared :as shared]))
+            [bucks.shared :as shared]
+            [bucks.import.state :as imports]
+            [bucks.import.core :as imports.core]
+            [bucks.pages.core :as pages]))
 
 
 (defn page []
@@ -21,14 +24,14 @@
             (map-indexed
              (fn [i [k e]]
                [:tr {:key i}
-                [:td (.toLocaleString (js/Date. k))]
+                [:td (imports.core/import-id->str k)]
                 [:td (count e)]
                 [:td
                 #_ [:a.has-text-danger
                   #_{:on-click #(accounts/remove-account (:id account))}
                   "remove "]
                  [:a
-                 #_ {:on-click (fn []
-                               (accounts/select-account (:id account))
-                               (pages/go-to-page :import))}
+                  {:on-click (fn []
+                               (imports/select-import k)
+                               (pages/go-to-page :view-import))}
                   "view "]]])))]]]))

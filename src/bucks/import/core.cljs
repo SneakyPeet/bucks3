@@ -3,6 +3,9 @@
             [bucks.accounts.core :as a]))
 
 
+(defn import-id->str [i]
+  (.toLocaleString (js/Date. i)))
+
 (defn- prep-new [account-type import-id entry]
   (let [amount  (if-let [amount (:amount entry)]
                  amount

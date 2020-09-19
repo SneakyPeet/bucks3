@@ -7,7 +7,8 @@
             [bucks.import.pages.confirm :as confirm-import]
             [bucks.import.pages.account-imports :as account-imports]
             [bucks.tags.pages.manage :as manage-tags]
-            [bucks.options.pages.manage :as options]))
+            [bucks.options.pages.manage :as options]
+            [bucks.import.pages.view-import :as view-import]))
 
 (defn init-state [state]
   (assoc state ::pages/current-page :accounts))
@@ -42,6 +43,7 @@
       :import [import/page]
       :confirm-import [confirm-import/page]
       :account-imports [account-imports/page]
+      :view-import [view-import/page]
 
       :manage-tags [wrap-menu [manage-tags/page]]
       :manage-options [wrap-menu [options/page]]

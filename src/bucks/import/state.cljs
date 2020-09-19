@@ -78,3 +78,19 @@
                             (assoc e :exchange-rate (get exchange-rates (:date e) 1)))))]
     (when-not (empty? entries)
       (accounts/add-entries account-id entries))))
+
+
+(rf/reg-event-db
+ ::select-import
+ (fn [db [_ import-id]]
+   (assoc db ::selected-import import-id)))
+
+
+(defn select-import [import-id]
+  (rf/dispatch [::select-import import-id]))
+
+
+(rf/reg-sub
+ ::selected-import
+ (fn [db _]
+   (::selected-import db)))
