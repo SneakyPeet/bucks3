@@ -16,7 +16,8 @@
          [:tr [:td "Accounts"] [:td "Currency"]
           [:td "Type"]
           [:td "Balance"] [:td "Total entries"]
-          [:td "Actions"]]])
+          [:td "Actions"]
+          [:td "View"]]])
       [:tbody
        (->> accounts
             (map-indexed
@@ -54,10 +55,17 @@
                     {:on-click (fn []
                                  (accounts/select-account (:id account))
                                  (pages/go-to-page :import))}
-                    "import "]
+                    "import "]]
+                  [:td
                    [:a.has-text-success
                     {:on-click (fn []
                                  (accounts/select-account (:id account))
                                  (pages/go-to-page :view-account))}
-                    "view "]]]))))
+                    "entries "]
+
+                   [:a.has-text-warning
+                    {:on-click (fn []
+                                 (accounts/select-account (:id account))
+                                 (pages/go-to-page :account-imports))}
+                    "imports "]]]))))
        [:tr [:td [:a {:on-click accounts/add-account} "+ add account"]]]]]]))

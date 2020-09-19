@@ -2,9 +2,10 @@
   (:require [re-frame.core :as rf]
             [bucks.pages.core :as pages]
             [bucks.accounts.pages.accounts :as accounts]
+            [bucks.accounts.pages.view-account :as view-account]
             [bucks.import.pages.import :as import]
             [bucks.import.pages.confirm :as confirm-import]
-            [bucks.accounts.pages.view-account :as view-account]
+            [bucks.import.pages.account-imports :as account-imports]
             [bucks.tags.pages.manage :as manage-tags]
             [bucks.options.pages.manage :as options]))
 
@@ -36,9 +37,12 @@
   (let [current-page @(rf/subscribe [::pages/current-page])]
     (case current-page
       :accounts [wrap-menu [accounts/page]]
+      :view-account [view-account/page]
+
       :import [import/page]
       :confirm-import [confirm-import/page]
-      :view-account [view-account/page]
+      :account-imports [account-imports/page]
+
       :manage-tags [wrap-menu [manage-tags/page]]
       :manage-options [wrap-menu [options/page]]
       [:div.has-text-danger
