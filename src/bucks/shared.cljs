@@ -37,9 +37,9 @@
 
 (def ^:private tags-r (r/adapt-react-class Tags))
 
-(defn select [options value {:keys [placeholder on-change]
-                             :or {placeholder "Please select"
-                                  on-change prn}}]
+(defn select [options value & {:keys [placeholder on-change]
+                               :or {placeholder "Please select"
+                                    on-change prn}}]
   (let [o-map (->> options
                    (map (juxt :label :value))
                    (into {}))]

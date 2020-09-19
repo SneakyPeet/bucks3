@@ -9,6 +9,7 @@
  (fn [db [_ id new-entries]]
    (assoc db ::imported-entries
           (import/process-entries
+           (get-in db [::accounts/accounts id :account-type])
            (vals (get-in db [::accounts/accounts id :entries]))
            new-entries))))
 

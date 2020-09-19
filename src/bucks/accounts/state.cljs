@@ -140,6 +140,10 @@
   (rf/dispatch [::update-entry account-id entry-id k v]))
 
 
+(defn update-entry-type [account-id entry-id v]
+  (update-entry account-id entry-id :type v))
+
+
 (defn update-entry-note [account-id entry-id v]
   (update-entry account-id entry-id :note v))
 

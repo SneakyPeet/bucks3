@@ -3,7 +3,14 @@
             [bucks.pages.core :as pages]
             [bucks.options.core :as opts]))
 
-(def account-types #{:investment :budget})
+(def account-config
+  {:investment {:entry-types []
+                :default (fn [entry] nil)}
+   :budget {:entry-types [:expense :income :transfer :refund]
+            :default (fn [entry] (if (pos? (:amount entry)) :income :expense))}})
+
+
+(def account-types (keys account-config))
 
 
 (defn new-account [id]
@@ -58,6 +65,6 @@
   (->> entries
        vals
        (map #(select-keys % [:amount :balance :import-id :id :note :tags :date :description :import-index
-                             :exchange-rate]))
+                             :exchange-rate :type]))
        (map (juxt :id identity))
        (into {})))

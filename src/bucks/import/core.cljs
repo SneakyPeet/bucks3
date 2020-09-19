@@ -3,35 +3,37 @@
             [bucks.accounts.core :as a]))
 
 
-(defn- prep-new [import-id entry]
-  (let [amount (if-let [amount (:amount entry)]
+(defn- prep-new [account-type import-id entry]
+  (let [amount  (if-let [amount (:amount entry)]
                  amount
                  (- (:amount-in entry 0) (:amount-out entry 0)))
         balance (if-let [balance (:balance entry)]
                   balance
-                  :not-provided)]
-    (-> entry
-        (dissoc :amount-in :amount-out)
-        (assoc :amount amount
-               :balance balance
-               :import-id import-id
-               :id (str (random-uuid))
-               :note (:note entry "")
-               :tags #{}))))
+                  :not-provided)
+        entry   (-> entry
+                  (dissoc :amount-in :amount-out)
+                  (assoc :amount amount
+                         :balance balance
+                         :import-id import-id
+                         :id (str (random-uuid))
+                         :note (:note entry "")
+                         :tags #{}))
+        entry-type ((get-in a/account-config [account-type :default]) entry)]
+    (assoc entry :type entry-type)))
 
 
 (defn- comparable [e]
   (select-keys e [:date :amount :balance :description]))
 
 
-(defn process-entries [existing-entries new-entries]
+(defn process-entries [account-type existing-entries new-entries]
   (let [import-id (.getTime (js/Date.))
         lookup (->> existing-entries
                     (map comparable)
                     set)
         new-entries (->> new-entries
                          (map (fn [e]
-                                (let [prepped (prep-new import-id e)
+                                (let [prepped (prep-new account-type import-id e)
                                       compare (comparable prepped)]
                                   (if (contains? lookup compare)
                                     (assoc prepped :duplicate? true)

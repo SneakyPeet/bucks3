@@ -9,5 +9,5 @@
                                {:value k
                                 :label (str k " - " v)})))]
     [shared/select currencies value
-     {:on-change on-change}]
+     :on-change on-change]
     ))
