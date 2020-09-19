@@ -27,8 +27,12 @@
                 [:td (imports.core/import-id->str k)]
                 [:td (count e)]
                 [:td
-                #_ [:a.has-text-danger
-                  #_{:on-click #(accounts/remove-account (:id account))}
+                 [:a.has-text-danger
+                  {:on-click #(when (js/confirm "You cannot undo import removal! Proceed?")
+                                (accounts/remove-entries
+                                 selected-account
+                                 (fn [e]
+                                   (= k (:import-id e)))))}
                   "remove "]
                  [:a
                   {:on-click (fn []

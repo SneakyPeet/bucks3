@@ -106,26 +106,44 @@
      (if (empty? n) "[account name missing]" n))))
 
 
+(defn- apply-entries [db localstore account-id entries]
+  (let [{:keys [entries] :as d} (accounts/re-balance entries)
+        entries-m (->> entries
+                       (map (juxt :id identity))
+                       (into {}))]
+    {:db (-> db
+             (update-in [::acounts account-id] merge d)
+             (assoc-in [::accounts account-id :entries] entries-m))
+     :localstore (assoc-in localstore [:accounts account-id :entries]
+                           (accounts/entries->saveable entries-m))}))
+
+
 (rf/reg-event-fx
  ::add-entries
  [(rf/inject-cofx :localstore)]
  (fn [{:keys [db localstore]} [_ account-id e]]
-   (let [{:keys [entries] :as d}
-         (->> (get-in db [::accounts account-id :entries])
-              vals
-              (into e)
-              accounts/re-balance)
-         entries-m (->> entries
-                        (map (juxt :id identity))
-                        (into {}))]
-     {:db (-> db
-              (update-in [::acounts account-id] merge d)
-              (assoc-in [::accounts account-id :entries] entries-m))
-      :localstore (assoc-in localstore [:accounts account-id :entries] (accounts/entries->saveable entries-m))})))
+   (let [entries (->> (get-in db [::accounts account-id :entries])
+                      vals
+                      (into e))]
+     (apply-entries db localstore account-id entries))))
 
 
 (defn add-entries [account-id e]
   (rf/dispatch [::add-entries account-id e]))
+
+
+(rf/reg-event-fx
+ ::remove-entries
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ account-id remove?]]
+   (let [entries (->> (get-in db [::accounts account-id :entries])
+                      vals
+                      (remove remove?))]
+     (apply-entries db localstore account-id entries))))
+
+
+(defn remove-entries [account-id pred]
+  (rf/dispatch [::remove-entries account-id pred]))
 
 
 (rf/reg-event-fx

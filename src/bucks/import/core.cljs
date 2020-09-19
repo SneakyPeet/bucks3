@@ -51,5 +51,5 @@
                       (map #(assoc % :existing? true)))]
     (->> new-entries
          (into existing)
-         (sort-by (juxt :import-index))
+         (sort-by (juxt :date :import-index))
          reverse)))

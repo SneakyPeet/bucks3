@@ -159,8 +159,9 @@
         selected-types @*header-types
         has-header? (number? header-index)
         header-not-ignored? (not (contains? ignored header-index))
+        header-in-bounds? (< header-index (count data))
         date-format @*date-format]
-    (if-not (and has-header? header-not-ignored?)
+    (if-not (and has-header? header-not-ignored? header-in-bounds?)
       [:div.has-text-info "Please choose a header"]
       (let [header (nth data header-index)
             header-length (count header)
