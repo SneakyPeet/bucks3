@@ -3,6 +3,9 @@
             [bucks.tags.core :as tags.core]))
 
 
+(defn init-state [db localstore]
+  (assoc db ::available-tags (:available-tags localstore {})))
+
 (rf/reg-sub
  ::available-tags
  (fn [db _]
@@ -28,16 +31,20 @@
         (into {}))))
 
 
-(rf/reg-event-db
+(rf/reg-event-fx
  ::add-tag
- (fn [db [_ tag]]
-   (assoc-in db [::available-tags (:id tag)] tag)))
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ tag]]
+   {:db (assoc-in db [::available-tags (:id tag)] tag)
+    :localstore (assoc-in localstore [:available-tags (:id tag)] tag)}))
 
 
 (rf/reg-event-db
  ::update-tag
- (fn [db [_ id k v]]
-   (assoc-in db [::available-tags id k] v)))
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ id k v]]
+   {:db (assoc-in db [::available-tags id k] v)
+    :localstore (assoc-in localstore [:available-tags id k] v)}))
 
 
 (defn add-tag

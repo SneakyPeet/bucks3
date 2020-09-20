@@ -6,6 +6,7 @@
             [bucks.accounts.state :as accounts]
             [bucks.pages.registry :as pages]
             [bucks.options.state :as options]
+            [bucks.tags.state :as tags]
             [akiroz.re-frame.storage :refer [reg-co-fx!]]
             ["file-saver" :as file-saver]
             ["moment" :as moment]
@@ -25,6 +26,7 @@
     :db (-> {}
             (options/init-state localstore)
             (accounts/init-state localstore)
+            (tags/init-state localstore)
             (pages/init-state))}))
 
 
