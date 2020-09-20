@@ -77,7 +77,8 @@
                      (map (fn [e]
                             (assoc e :exchange-rate (get exchange-rates (:date e) 1)))))]
     (when-not (empty? entries)
-      (accounts/add-entries account-id entries))))
+      (accounts/add-entries account-id entries)
+      (:import-id (first entries)))))
 
 
 (rf/reg-event-db

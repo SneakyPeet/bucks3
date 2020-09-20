@@ -38,8 +38,11 @@
                 (pages/go-to-page :accounts)
                 (import/finish-import))
         complete (fn []
-                   (import/confirm-entries selected-account exchange-rates imported)
-                   (clear))]
+                   (if-let [import-id (import/confirm-entries selected-account exchange-rates imported)]
+                     (do (clear)
+                         (import/select-import import-id)
+                         (pages/go-to-page :view-import))
+                     (clear)))]
     [:div
      [shared/heading "Confirm Import"
       [shared/back "cancel" clear ]]

@@ -39,7 +39,7 @@
     :localstore (assoc-in localstore [:available-tags (:id tag)] tag)}))
 
 
-(rf/reg-event-db
+(rf/reg-event-fx
  ::update-tag
  [(rf/inject-cofx :localstore)]
  (fn [{:keys [db localstore]} [_ id k v]]
