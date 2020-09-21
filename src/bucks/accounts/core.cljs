@@ -1,7 +1,8 @@
 (ns bucks.accounts.core
   (:require [re-frame.core :as rf]
             [bucks.pages.core :as pages]
-            [bucks.options.core :as opts]))
+            [bucks.options.core :as opts]
+            [bucks.utils :as utils]))
 
 (def account-config
   {:investment {:entry-types []
@@ -41,7 +42,9 @@
          entries (sort-entries entries)]
     (if (empty? entries)
       {:current-balance current-balance
+       :current-balance-p (utils/format-cents current-balance)
        :current-balance-base exchange-balance
+       :current-balance-base-p (utils/format-cents exchange-balance)
        :entries result}
       (let [{:keys [balance amount exchange-rate] :as entry} (first entries)
             entry-balance (if (= :not-provided balance)
@@ -54,7 +57,12 @@
                            :amount-base amount)
                     (assoc entry
                            :calculated-balance-base (calculate-exchange-value exchange-rate entry-balance)
-                           :amount-base (calculate-exchange-value exchange-rate amount)))]
+                           :amount-base (calculate-exchange-value exchange-rate amount)))
+            entry (assoc entry
+                         :calculated-balance-p (utils/format-cents (:calculated-balance entry))
+                         :calculated-balance-base-p (utils/format-cents (:calculated-balance-base entry))
+                         :amount-base-p (utils/format-cents (:amount-base entry))
+                         :amount (utils/format-cents (:amount entry)))]
         (recur entry-balance
                (:calculated-balance-base entry)
                (conj result entry)
@@ -68,3 +76,11 @@
                              :exchange-rate :type]))
        (map (juxt :id identity))
        (into {})))
+
+
+(defn entries-missing-tags [entries]
+  (filter #(empty? (:tags %)) entries))
+
+
+(defn entries-missing-tags-total [entries]
+  (count (entries-missing-tags entries)))

@@ -26,15 +26,17 @@
 
 (defn- parse-to-cents [s]
   (try
-    (let [n
-          (-> s
-              (string/replace #"\s" "")
-              (string/replace #"," "")
-              (string/replace #"\." "")
-              js/parseInt)]
-      (when (js/isNaN n)
-        (throw (js/Error. (str "Cannot convert to number: " s))))
-      n)
+    (if (string/blank? s)
+      0
+      (let [n
+            (-> s
+                (string/replace #"\s" "")
+                (string/replace #"," "")
+                (string/replace #"\." "")
+                js/parseInt)]
+        (when (js/isNaN n)
+          (throw (js/Error. (str "Cannot convert to number: " s))))
+        n))
     (catch :default e
       (throw (js/Error. (str "Cannot convert to number: " s))))))
 

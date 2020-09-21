@@ -23,6 +23,11 @@
     [:div
      [shared/heading "Import for " name
       [shared/back "back" #(pages/go-to-page :accounts)]]
+     [:p "CSV Import."
+      [:small.has-text-grey " (statements in pdf? Use "
+       [:a {:href "https://tabula.technology/" :target "_blank"} "tabula"]
+       " to convert them to csv)"]
+      ]
      [importer/component account #(receive-import selected-account %)]
      #_[:pre (str (->> @(rf/subscribe [::imported-entries])
                        (apply importing/process-entries)))]

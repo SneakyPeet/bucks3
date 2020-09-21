@@ -15,5 +15,4 @@
         entries @(rf/subscribe [::accounts/account-entries selected-account])]
     [:div
      [account.heading/component]
-     [entries.c/component selected-account entries]
-     [:pre (str entries)]]))
+     [entries.c/component selected-account entries]]))
