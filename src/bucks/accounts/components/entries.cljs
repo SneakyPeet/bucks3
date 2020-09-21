@@ -99,13 +99,14 @@
          [:tbody
           (->> entries
                (map-indexed
-                (fn [i {:keys [id date description amount calculated-balance exchange-rate note tags] :as entry}]
+                (fn [i {:keys [id date description amount amount-p
+                               calculated-balance-p exchange-rate note tags] :as entry}]
                   [:tr {:key i}
                    [:td {:class (when-not (neg? amount) "is-selected")} date]
                    [:td description]
 
-                   [:td.has-text-right amount]
-                   [:td calculated-balance]
+                   [:td.has-text-right amount-p]
+                   [:td calculated-balance-p]
                    [:td.has-text-right exchange-rate]
 
                    [:td [shared/select entry-types (:type entry)

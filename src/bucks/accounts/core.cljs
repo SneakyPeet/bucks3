@@ -62,7 +62,7 @@
                          :calculated-balance-p (utils/format-cents (:calculated-balance entry))
                          :calculated-balance-base-p (utils/format-cents (:calculated-balance-base entry))
                          :amount-base-p (utils/format-cents (:amount-base entry))
-                         :amount (utils/format-cents (:amount entry)))]
+                         :amount-p (utils/format-cents (:amount entry)))]
         (recur entry-balance
                (:calculated-balance-base entry)
                (conj result entry)

@@ -5,7 +5,8 @@
             [bucks.import.state :as import]
             [bucks.shared :as shared]
             [bucks.options.state :as opts]
-            [bucks.components.fixer-io :as fixer]))
+            [bucks.components.fixer-io :as fixer]
+            [bucks.utils :as utils]))
 
 
 
@@ -82,8 +83,8 @@
                                  :else "has-background-primary")}
                    [:td date]
                    [:td description]
-                   [:td.has-text-right amount]
-                   [:td.has-text-right balance]
+                   [:td.has-text-right (utils/format-cents amount)]
+                   [:td.has-text-right (utils/format-cents balance)]
                    [:td (cond existing? ""
                               duplicate? "duplicate"
                               new? "new")]
