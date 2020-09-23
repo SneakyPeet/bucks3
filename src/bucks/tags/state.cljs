@@ -14,6 +14,12 @@
 
 
 (rf/reg-sub
+ ::available-tags-map
+ (fn [db _]
+   (->> (::available-tags db {}))))
+
+
+(rf/reg-sub
  ::tag-id-labels
  (fn [db _]
    (->> (::available-tags db {})

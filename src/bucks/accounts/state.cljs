@@ -100,6 +100,14 @@
 
 
 (rf/reg-sub
+ ::accounts-by-type
+ (fn [db [_ t]]
+   (->> (get db ::accounts)
+        vals
+        (filter #(= t (:account-type %))))))
+
+
+(rf/reg-sub
  ::account-name
  (fn [db [_ id]]
    (let [n (get-in db [::accounts id :name])]

@@ -8,7 +8,8 @@
             [bucks.import.pages.account-imports :as account-imports]
             [bucks.tags.pages.manage :as manage-tags]
             [bucks.options.pages.manage :as options]
-            [bucks.import.pages.view-import :as view-import]))
+            [bucks.import.pages.view-import :as view-import]
+            [bucks.budget.pages.table-report :as budget-table-report]))
 
 (defn init-state [state]
   (assoc state ::pages/current-page :accounts))
@@ -17,7 +18,8 @@
 (def menu-items
   {:accounts "accounts"
    :manage-tags "tags"
-   :manage-options "options"})
+   :manage-options "options"
+   :budget-table "budget"})
 
 
 (defn- wrap-menu [c]
@@ -47,5 +49,7 @@
 
       :manage-tags [wrap-menu [manage-tags/page]]
       :manage-options [wrap-menu [options/page]]
+
+      :budget-table [wrap-menu [budget-table-report/page]]
       [:div.has-text-danger
        "Page not defined: " (str current-page)])))

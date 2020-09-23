@@ -4,3 +4,7 @@
 (def ^:private numformat (js/Intl.NumberFormat.))
 (defn format-cents [c]
   (.format numformat (/ c 100)))
+
+
+(defn date->month [d]
+  (subs d 0 7))

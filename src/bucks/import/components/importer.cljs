@@ -23,6 +23,9 @@
   (reset)
   (reset! *result {}))
 
+(defn- clear []
+  (reset! *header-types {}))
+
 
 (defn- parse-to-cents [s]
   (try
@@ -183,6 +186,9 @@
                 continue? (and (once? :date) (once? :description)
                                (or (once? :amount) (and (once? :amount-in) (once? :amount-out)))
                                (once-optional? :balance) (once-optional? :note))]
+            (prn (once? :date) (once? :description)
+                 (or (once? :amount) (and (once? :amount-in) (once? :amount-out)))
+                 (once-optional? :balance) (once-optional? :note))
             (if (empty? header)
               [:div "Please upload a .csv file"]
               [:div.columns
@@ -280,6 +286,7 @@
        [:div.buttons
         [upload-button]
         [:button.button.mt-2.ml-2.is-small {:on-click restart} "Restart"]
-        [:button.button.mt-2.is-small {:on-click reset} "Reset"]]
+        [:button.button.mt-2.is-small {:on-click reset} "Reset"]
+        [:button.button.mt-2.is-small {:on-click clear} "Clear"]]
        [match done]
        [result-table]])}))
