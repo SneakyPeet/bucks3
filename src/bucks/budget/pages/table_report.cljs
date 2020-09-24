@@ -6,7 +6,7 @@
             [bucks.shared :as shared]
             [clojure.string :as string]
             [cljs-bean.core :refer [->js]]
-            ["simple-statistics" :refer (mean quantile)]))
+            ["simple-statistics" :refer (mean quantile sum)]))
 
 
 (defn- entry-month [e]
@@ -35,6 +35,7 @@
                                      (get available-tags id))))
                     color (:color (first tags) "#efefef")
                     tag (->> (map :label tags)
+                             sort
                              (string/join " - "))]
                 (assoc e :tag [color tag]))))
        (group-by (juxt entry-month :tag))
@@ -68,7 +69,7 @@
                    stats' (get stats tag)]
                [:tr {:key i}
                 [:td {:style {:background-color color}}
-                 label]
+                 (if (empty? label) "un-tagged" label)]
                 (->> stats'
                      (map-indexed
                       (fn [i [k v]]
@@ -165,14 +166,14 @@
                     [q70 min-max] (if (> mean 0)
                                      [0.7 max]
                                      [0.3 min])
-                    stats' {:max (apply min-max amounts')
+                    stats' {:sum (sum amounts)
+                            :max (apply min-max amounts')
                             :mean mean
                             :q70 (quantile amounts q70)}]
                 [tag (->> stats'
                           (map (fn [[k v]] [k (->amounts v)]))
                           (into {}))])))
-           (into {}))
-      )))
+           (into {})))))
 
 
 (defn page []
@@ -193,7 +194,7 @@
         expense-budget-totals (budget-totals months expense-tag-months)
         combined-budget-totals (combined-totals income-budget-totals expense-budget-totals)]
     [:div
-     [:pre (str (stats months income-tag-months))]
+     ;[:pre (str (stats months income-tag-months))]
      [shared/table
       [months-thead "Total" income-stats months]
       [budget-totals-tbody income-stats combined-budget-totals]

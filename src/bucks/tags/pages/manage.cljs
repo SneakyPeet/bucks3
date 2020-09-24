@@ -3,16 +3,15 @@
             [reagent.core :as r]
             [bucks.tags.state :as tag.state]
             [bucks.shared :as shared]
-            ["react-color" :refer (TwitterPicker)]))
+            ["react-color" :refer (CompactPicker)]))
 
-(def ^:private react-color (r/adapt-react-class TwitterPicker))
+(def ^:private react-color (r/adapt-react-class CompactPicker))
 
 (defn- color-picker []
   (r/with-let [*color (r/atom "#000")]
     [:div.px-1.py-1 {:style {:background-color @*color :width "fit-content" :border-radius "0.5rem"}}
      [react-color {:color @*color
-                   :onChangeComplete #(reset! *color (.-hex %))
-                   :triangle "hide"}]]))
+                   :onChangeComplete #(reset! *color (.-hex %))}]]))
 
 
 (defn- color-box [color]
