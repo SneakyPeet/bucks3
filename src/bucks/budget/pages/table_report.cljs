@@ -4,7 +4,9 @@
             [bucks.tags.state :as tags.state]
             [bucks.utils :as utils]
             [bucks.shared :as shared]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [cljs-bean.core :refer [->js]]
+            ["simple-statistics" :refer (mean quantile)]))
 
 
 (defn- entry-month [e]
@@ -46,7 +48,7 @@
                  :amount-base-p (utils/format-cents amount)})))))
 
 
-(defn- budget-tbody [months entry-tag-months]
+(defn- budget-tbody [months entry-tag-months stats]
   (let [tags (->> entry-tag-months
                   (map :tag)
                   set
@@ -62,15 +64,22 @@
      (->> tags
           (map-indexed
            (fn [i tag]
-             (let [[color label] tag]
+             (let [[color label] tag
+                   stats' (get stats tag)]
                [:tr {:key i}
                 [:td {:style {:background-color color}}
                  label]
+                (->> stats'
+                     (map-indexed
+                      (fn [i [k v]]
+                        [:td.has-text-right {:key i} (:amount-base-p v)])))
+                #_[:td.has-text-right (get-in stats [tag :avg :amount-base-p])]
                 (->> months
                      (map-indexed
                       (fn [j month]
                         [:td.has-text-right {:key (str i "-" j)}
                          (get-in entries [tag month])])))]))))]))
+
 
 (defn- budget-totals [months entry-tag-months]
   (let [entry-months (group-by :month entry-tag-months)]
@@ -84,11 +93,19 @@
                    :amount-base amount
                    :amount-base-p (utils/format-cents amount)}))))))
 
-(defn- budget-totals-tbody [months budget-totals]
+
+(defn- budget-totals-tbody [stats months]
   [:tbody
    [:tr {:style {:border-bottom "solid 1px black"
                  :border-top "solid 1px black"}}
-    [:th ]
+    [:th]
+
+    (->> stats
+         first last
+         (map-indexed
+          (fn [i _]
+            [:th {:key i}])))
+
     (->> months
          (map-indexed
           (fn [i {:keys [month amount-base-p amount-base]}]
@@ -99,10 +116,15 @@
              amount-base-p])))]])
 
 
-(defn- months-thead [heading months]
+(defn- months-thead [heading stats months]
   [:thead
    [:tr
     [:th heading]
+    (->> stats
+         first last
+         (map-indexed
+          (fn [i [k _]]
+            [:th.has-text-right {:key i} (name k)])))
     (->> months
          (map-indexed
           (fn [i m]
@@ -125,6 +147,34 @@
                   (assoc m :amount-base a :amount-base-p (utils/format-cents a))))))))
 
 
+(defn- stats [months entry-tag-month]
+  (let [total-months (count months)]
+    (if (zero? total-months)
+      {}
+      (->> entry-tag-month
+           (group-by :tag)
+           (map
+            (fn [[tag e-months]]
+              (let [->amounts (fn [n] {:amount-base n
+                                       :amount-base-p (utils/format-cents n)})
+                    pad-zeros (repeat (- total-months (count e-months)) 0)
+                    amounts' (into (map :amount-base e-months)
+                                   pad-zeros)
+                    amounts (->js amounts')
+                    mean (mean amounts)
+                    [q70 min-max] (if (> mean 0)
+                                     [0.7 max]
+                                     [0.3 min])
+                    stats' {:max (apply min-max amounts')
+                            :mean mean
+                            :q70 (quantile amounts q70)}]
+                [tag (->> stats'
+                          (map (fn [[k v]] [k (->amounts v)]))
+                          (into {}))])))
+           (into {}))
+      )))
+
+
 (defn page []
   (let [budget-accounts @(rf/subscribe [::accounts/accounts-by-type :budget])
         available-tags @(rf/subscribe [::tags.state/available-tags-map])
@@ -137,18 +187,21 @@
                     set
                     sort
                     reverse)
+        income-stats (stats months income-tag-months)
+        expense-stats (stats months expense-tag-months)
         income-budget-totals (budget-totals months income-tag-months)
         expense-budget-totals (budget-totals months expense-tag-months)
         combined-budget-totals (combined-totals income-budget-totals expense-budget-totals)]
     [:div
+     [:pre (str (stats months income-tag-months))]
      [shared/table
-      [months-thead "Total" months]
-      [budget-totals-tbody combined-budget-totals]
+      [months-thead "Total" income-stats months]
+      [budget-totals-tbody income-stats combined-budget-totals]
       [space]
-      [months-thead "Income" months]
-      [budget-tbody months income-tag-months]
-      [budget-totals-tbody income-budget-totals]
+      [months-thead "Income" income-stats months]
+      [budget-tbody months income-tag-months income-stats]
+      [budget-totals-tbody income-stats income-budget-totals]
       [space]
-      [months-thead "Expense" months]
-      [budget-tbody months expense-tag-months]
-      [budget-totals-tbody expense-budget-totals]]]))
+      [months-thead "Expense" expense-stats months]
+      [budget-tbody months expense-tag-months expense-stats]
+      [budget-totals-tbody income-stats expense-budget-totals]]]))
