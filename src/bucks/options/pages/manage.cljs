@@ -35,7 +35,8 @@
     [:div.content
      [:ul
       [:li [:b "Investment: "] "For tracking your investment growth"]
-      [:li [:b "Budget: "] "For tracking non investment money (income, spend, etc.)"]]
+      [:li [:b "Budget: "] "For tracking non investment money (income, spend, etc.)"]
+      [:li [:b "Bucket: "] "An account for tracking budgeted money saved for later (vacation, yearly expenses etc)"]]
      [:p "Data from both account types will be used to calculate things like savings rate and time till retirement."]]
     [:h2.heading "Entry Types"]
     [:div.content.is-size-7
@@ -48,4 +49,8 @@
         [:li [:b "Income: "] "Money that you earn"]
         [:li [:b "Expense: "] "Money that you spend"]
         [:li [:b "Refund: "] "Money that you get that is not considered income"]
-        [:li [:b "Transfer: "] "Transfers into and from the account (That are not considered income or expenditure)"]]]]]]])
+        [:li [:b "Transfer: "] "Transfers into and from the account (That are not considered income or expenditure)"]]]
+      [:li "Bucket"
+       [:ul
+        [:li [:b "In: "] "Money that moved in for saving"]
+        [:li [:b "Out: "] "Money that moved out for spending"]]]]]]])

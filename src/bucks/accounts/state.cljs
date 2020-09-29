@@ -120,7 +120,7 @@
                        (map (juxt :id identity))
                        (into {}))]
     {:db (-> db
-             (update-in [::acounts account-id] merge d)
+             (update-in [::accounts account-id] merge d)
              (assoc-in [::accounts account-id :entries] entries-m))
      :localstore (assoc-in localstore [:accounts account-id :entries]
                            (accounts/entries->saveable entries-m))}))

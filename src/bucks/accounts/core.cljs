@@ -8,7 +8,9 @@
   {:investment {:entry-types []
                 :default (fn [entry] nil)}
    :budget {:entry-types [:expense :income :transfer :refund]
-            :default (fn [entry] (if (pos? (:amount entry)) :income :expense))}})
+            :default (fn [entry] (if (pos? (:amount entry)) :income :expense))}
+   :bucket {:entry-types [:in :out]
+            :default (fn [entry] (if (pos? (:amount entry)) :in :out))}})
 
 
 (def account-types (keys account-config))

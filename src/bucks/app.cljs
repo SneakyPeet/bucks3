@@ -7,6 +7,7 @@
             [bucks.pages.registry :as pages]
             [bucks.options.state :as options]
             [bucks.tags.state :as tags]
+            [bucks.budget.state :as budget]
             [akiroz.re-frame.storage :refer [reg-co-fx!]]
             ["file-saver" :as file-saver]
             ["moment" :as moment]
@@ -27,7 +28,8 @@
             (options/init-state localstore)
             (accounts/init-state localstore)
             (tags/init-state localstore)
-            (pages/init-state))}))
+            (pages/init-state)
+            (budget/init-state localstore))}))
 
 
 (rf/reg-event-fx

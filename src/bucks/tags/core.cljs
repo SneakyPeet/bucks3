@@ -4,4 +4,4 @@
 (defn new-tag [label]
   {:id (str (random-uuid))
    :label label
-   :color "#e5e5e5"})
+   :color "#AFAFAF"})

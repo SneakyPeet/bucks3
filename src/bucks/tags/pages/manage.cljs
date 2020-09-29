@@ -2,6 +2,7 @@
   (:require [re-frame.core :as rf]
             [reagent.core :as r]
             [bucks.tags.state :as tag.state]
+            [bucks.accounts.state :as accounts]
             [bucks.shared :as shared]
             ["react-color" :refer (CompactPicker)]))
 
@@ -21,19 +22,30 @@
             :background-color color}}])
 
 
+(defn- tag-usage [accounts]
+  (->> accounts
+       (map #(-> % :entries vals))
+       (reduce into)
+       (map #(-> % :tags vec))
+       (reduce into)
+       frequencies))
+
+
 (defn page []
-  (let [all-tags @(rf/subscribe [::tag.state/available-tags])]
+  (let [all-tags @(rf/subscribe [::tag.state/available-tags])
+        accounts @(rf/subscribe [::accounts/accounts])
+        tag-usage (tag-usage accounts)]
     [:div
+     [:pre (str tag-usage)]
      [:button.button.is-small.is-primary
       {:on-click #(tag.state/add-tag)}
       "Add Tag"]
-    #_ [:pre (str all-tags)]
      (when-not (empty? all-tags)
        [:div.columns
         [:div.column
          [shared/table
           [:thead
-           [:tr  [:th "tag"] [:th "color"] [:th]]]
+           [:tr  [:th "tag"] [:th "color"] [:th] [:th "usage"]]]
           [:tbody
            (->> all-tags
                 (map-indexed
@@ -46,6 +58,9 @@
                           color
                           :placeholder "I need a color"
                           :on-change #(tag.state/update-color id %)]]
-                    [:td [color-box color]]])))]]]
+                    [:td [color-box color]]
+                    [:td (if-let [c (get tag-usage id)]
+                           c
+                           [:a.has-text-danger {:on-click #(tag.state/remove-tag id)} "remove"])]])))]]]
         [:div.column
          [color-picker]]])]))

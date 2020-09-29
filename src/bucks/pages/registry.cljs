@@ -19,7 +19,7 @@
   {:accounts "accounts"
    :manage-tags "tags"
    :manage-options "options"
-   :budget-table "budget"})
+   :budget-table "budget:report"})
 
 
 (defn- wrap-menu [c]

@@ -58,3 +58,11 @@
                                             (get o-map))]
                                 (when-not (nil? v')
                                   (on-change v'))))))}]))
+
+(defn- level-item [heading title & {:keys [title-class]}]
+  [:div.level-item.has-text-centered
+   [:div
+    [:p.heading heading]
+    [:p.title
+     (if title-class {:class title-class} {})
+     title]]])

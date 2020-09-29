@@ -46,6 +46,14 @@
 
 
 (rf/reg-event-fx
+ ::remove-tag
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ tag-id]]
+   {:db (update db ::available-tags dissoc tag-id)
+    :localstore (update localstore :available-tags dissoc tag-id)}))
+
+
+(rf/reg-event-fx
  ::update-tag
  [(rf/inject-cofx :localstore)]
  (fn [{:keys [db localstore]} [_ id k v]]
@@ -56,6 +64,10 @@
 (defn add-tag
   ([] (add-tag (tags.core/new-tag "NEW")))
   ([tag] (rf/dispatch [::add-tag tag])))
+
+
+(defn remove-tag
+  [tag-id] (rf/dispatch [::remove-tag tag-id]))
 
 
 (defn- update-tag [id k v]

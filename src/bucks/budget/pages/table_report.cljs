@@ -6,6 +6,9 @@
             [bucks.shared :as shared]
             [clojure.string :as string]
             [cljs-bean.core :refer [->js]]
+            [bucks.budget.state :as budget]
+            [bucks.budget.core :as budget.core]
+            [bucks.budget.components.budget-info :as budget-info]
             ["simple-statistics" :refer (mean quantile sum)]))
 
 
@@ -33,7 +36,7 @@
                               sort
                               (map (fn [id]
                                      (get available-tags id))))
-                    color (:color (first tags) "#efefef")
+                    color (:color (first tags) "black")
                     tag (->> (map :label tags)
                              sort
                              (string/join " - "))]
@@ -50,7 +53,8 @@
 
 
 (defn- budget-tbody [months entry-tag-months stats]
-  (let [tags (->> entry-tag-months
+  (let [current-budget @(rf/subscribe [::budget/current-budget])
+        tags (->> entry-tag-months
                   (map :tag)
                   set
                   (sort-by first))
@@ -58,7 +62,7 @@
                      (group-by :tag)
                      (map (fn [[tag e]]
                             [tag (->> e
-                                      (map (juxt :month :amount-base-p))
+                                      (map (juxt :month identity))
                                       (into {}))]))
                      (into {}))]
     [:tbody
@@ -66,20 +70,38 @@
           (map-indexed
            (fn [i tag]
              (let [[color label] tag
-                   stats' (get stats tag)]
+                   stats' (get stats tag)
+                   label (if (empty? label) "un-tagged" label)
+                   budget-item (get current-budget label (budget.core/budget-item label color))]
                [:tr {:key i}
-                [:td {:style {:background-color color}}
-                 (if (empty? label) "un-tagged" label)]
+                [:th {:style {:border-left (str "10px solid " color) :color color}}
+                 label]
+                [:th (when-not (zero? (:amount-base budget-item))
+                       [:span
+                        {:style {:color (when (= :none (:stat budget-item)) "#73d8ff")}}
+                        (utils/format-cents (:amount-base budget-item))])]
                 (->> stats'
                      (map-indexed
                       (fn [i [k v]]
-                        [:td.has-text-right {:key i} (:amount-base-p v)])))
+                        [:td.has-text-right
+                         {:key i
+                          :style {:cursor "pointer"
+                                  :background-color
+                                  (when (= k (:stat budget-item)) "#73d8ff")}
+                          :on-click #(budget/set-budget-item (budget.core/set-stat budget-item k (:amount-base v)))}
+                         (:amount-base-p v)])))
                 #_[:td.has-text-right (get-in stats [tag :avg :amount-base-p])]
                 (->> months
                      (map-indexed
                       (fn [j month]
-                        [:td.has-text-right {:key (str i "-" j)}
-                         (get-in entries [tag month])])))]))))]))
+                        (let [{:keys [amount-base amount-base-p]} (get-in entries [tag month])]
+                          [:td.has-text-right
+                           {:key (str i "-" j)
+                            :style {:cursor "pointer"}
+                            :on-click #(budget/set-budget-item
+                                        (budget.core/budget-item label color
+                                                                 :amount-base amount-base))}
+                           amount-base-p]))))]))))]))
 
 
 (defn- budget-totals [months entry-tag-months]
@@ -99,7 +121,7 @@
   [:tbody
    [:tr {:style {:border-bottom "solid 1px black"
                  :border-top "solid 1px black"}}
-    [:th]
+    [:th] [:th]
 
     (->> stats
          first last
@@ -121,6 +143,7 @@
   [:thead
    [:tr
     [:th heading]
+    [:th "budgeted"]
     (->> stats
          first last
          (map-indexed
@@ -194,7 +217,8 @@
         expense-budget-totals (budget-totals months expense-tag-months)
         combined-budget-totals (combined-totals income-budget-totals expense-budget-totals)]
     [:div
-     ;[:pre (str (stats months income-tag-months))]
+                                        ;[:pre (str (stats months income-tag-months))]
+     [budget-info/budget-info]
      [shared/table
       [months-thead "Total" income-stats months]
       [budget-totals-tbody income-stats combined-budget-totals]
