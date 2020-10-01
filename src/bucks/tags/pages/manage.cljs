@@ -4,7 +4,8 @@
             [bucks.tags.state :as tag.state]
             [bucks.accounts.state :as accounts]
             [bucks.shared :as shared]
-            ["react-color" :refer (CompactPicker)]))
+            ["react-color" :refer (CompactPicker)]
+            [bucks.pages.core :as pages]))
 
 (def ^:private react-color (r/adapt-react-class CompactPicker))
 
@@ -45,7 +46,7 @@
         [:div.column
          [shared/table
           [:thead
-           [:tr  [:th "tag"] [:th "color"] [:th] [:th "usage"]]]
+           [:tr  [:th "tag"] [:th "color"] [:th] [:th "usage"] [:th]]]
           [:tbody
            (->> all-tags
                 (map-indexed
@@ -61,6 +62,10 @@
                     [:td [color-box color]]
                     [:td (if-let [c (get tag-usage id)]
                            c
-                           [:a.has-text-danger {:on-click #(tag.state/remove-tag id)} "remove"])]])))]]]
+                           [:a.has-text-danger {:on-click #(tag.state/remove-tag id)} "remove"])]
+                    [:td [:a {:on-click #(do
+                                           (tag.state/select-tag id)
+                                           (pages/go-to-page :tag-entries))}
+                          "view"]]])))]]]
         [:div.column
          [color-picker]]])]))

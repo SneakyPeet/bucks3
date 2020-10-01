@@ -7,6 +7,7 @@
             [bucks.import.pages.confirm :as confirm-import]
             [bucks.import.pages.account-imports :as account-imports]
             [bucks.tags.pages.manage :as manage-tags]
+            [bucks.tags.pages.tag-entries :as tag-entries]
             [bucks.options.pages.manage :as options]
             [bucks.import.pages.view-import :as view-import]
             [bucks.budget.pages.table-report :as budget-table-report]))
@@ -48,6 +49,8 @@
       :view-import [view-import/page]
 
       :manage-tags [wrap-menu [manage-tags/page]]
+      :tag-entries [tag-entries/page]
+
       :manage-options [wrap-menu [options/page]]
 
       :budget-table [wrap-menu [budget-table-report/page]]

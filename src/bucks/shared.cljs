@@ -2,7 +2,8 @@
   (:require ["@yaireo/tagify/dist/react.tagify" :as Tags]
             [clojure.string :as string]
             [reagent.core :as r]
-            [cljs-bean.core :refer [->clj]]))
+            [cljs-bean.core :refer [->clj]]
+            [bucks.pages.core :as pages]))
 
 
 (defn heading [& s]
@@ -12,8 +13,10 @@
    [:hr]])
 
 
-(defn back [t f]
-  [:small.is-pulled-right [:a {:on-click f} t]])
+(defn back
+  ([t] (back t pages/go-back))
+  ([t f]
+   [:small.is-pulled-right [:a {:on-click f} t]]))
 
 
 (defn table [& children]

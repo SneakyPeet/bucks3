@@ -1,6 +1,7 @@
 (ns bucks.tags.state
   (:require [re-frame.core :as rf]
-            [bucks.tags.core :as tags.core]))
+            [bucks.tags.core :as tags.core]
+            [bucks.accounts.state :as accounts.state]))
 
 
 (defn init-state [db localstore]
@@ -80,3 +81,39 @@
 
 (defn update-color [id color]
   (update-tag id :color color))
+
+
+(rf/reg-event-db
+ ::select-tag
+ (fn [db [_ id]]
+   (assoc db ::selected-tag id)))
+
+
+(rf/reg-sub
+ ::selected-tag
+ (fn [db _]
+   (get-in db [::available-tags (::selected-tag db)])))
+
+
+(defn select-tag [id]
+  (rf/dispatch [::select-tag id]))
+
+
+(rf/reg-sub
+ ::tag-entries
+ (fn [db _]
+   (let [tag-id (::selected-tag db)
+         accounts (::accounts.state/accounts db)]
+     (->> accounts
+          vals
+          (map (fn [{:keys [entries name currency id] :as a}]
+                 (->> entries
+                      vals
+                      (filter #(contains? (:tags %) tag-id))
+                      (map #(assoc %
+                                   :account-name name
+                                   :account-id id
+                                   :currency currency)))))
+          (reduce into)
+          (sort-by :date)
+          reverse))))
