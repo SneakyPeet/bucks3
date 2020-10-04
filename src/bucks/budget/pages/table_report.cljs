@@ -25,7 +25,6 @@
 (defn- grouped-entries [entries]
   (let [{:keys [income expense refund transfer in out]} (group-by :type entries)]
     {:income income
-     :transfer transfer
      :expense (concat refund expense)
      :savings (concat in out)}))
 
@@ -55,6 +54,7 @@
 
 (defn- budget-tbody [group months entry-tag-months stats]
   (let [current-budget @(rf/subscribe [::budget/current-budget])
+        input-enabled? @(rf/subscribe [::budget/input-enabled?])
         tags (->> entry-tag-months
                   (map :tag)
                   set
@@ -73,14 +73,33 @@
              (let [[color label] tag
                    stats' (get stats tag)
                    label (if (empty? label) "un-tagged" label)
-                   budget-item (get-in current-budget [group label] (budget.core/budget-item label group color))]
+                   budget-item (get-in current-budget [group label] (budget.core/budget-item label group color))
+                   amount-base (:amount-base budget-item 0)]
                [:tr {:key i}
                 [:th {:style {:border-left (str "10px solid " color) :color color}}
                  label]
-                [:th (when-not (zero? (:amount-base budget-item))
-                       [:span
-                        {:style {:color (when (= :none (:stat budget-item)) "#73d8ff")}}
-                        (utils/format-cents (:amount-base budget-item))])]
+                [:th.has-text-right
+                 (if input-enabled?
+                   (let [v (/ amount-base 100)]
+                     [:input.input.is-small
+                      {:type "number"
+                       :style {:min-width "6rem"}
+                       :value v
+                       :on-change (fn [e]
+                                    (let [v (-> (.. e -target -value)
+                                                js/parseFloat
+                                                (* 100)
+                                                (Math/round))]
+                                      (budget/set-budget-item
+                                       (budget.core/set-stat budget-item :custom v))))}])
+                   (when-not (or (zero? amount-base) (nil? amount-base))
+                     [:span
+                      {:style {:color
+                               (case (:stat budget-item)
+                                 :none "#0065ff"
+                                 :custom "#880eaf"
+                                 "#72beff")}}
+                      (utils/format-cents (:amount-base budget-item))]))]
                 (->> stats'
                      (map-indexed
                       (fn [i [k v]]
@@ -88,7 +107,7 @@
                          {:key i
                           :style {:cursor "pointer"
                                   :background-color
-                                  (when (= k (:stat budget-item)) "#73d8ff")}
+                                  (when (= k (:stat budget-item)) "#72beff")}
                           :on-click #(budget/set-budget-item (budget.core/set-stat budget-item k (:amount-base v)))}
                          (:amount-base-p v)])))
                 #_[:td.has-text-right (get-in stats [tag :avg :amount-base-p])]
@@ -200,6 +219,19 @@
            (into {})))))
 
 
+(defn- controls []
+  (let [input-enabled? @(rf/subscribe [::budget/input-enabled?])]
+    [:div.buttons
+     [:button.button.is-small
+      {:on-click #(budget/toggle-enable-input)}
+      (if input-enabled? "Disable" "Enable") " input"]
+     [:button.button.is-danger.is-small
+      {:on-click (fn []
+                   (when (js/confirm "Clear?")
+                     (budget/clear-current-budget)))}
+      "Clear Budget"]]))
+
+
 (defn page []
   (let [budget-accounts @(rf/subscribe [::accounts/accounts-by-type :budget])
         bucket-accounts @(rf/subscribe [::accounts/accounts-by-type :bucket])
@@ -225,6 +257,7 @@
     [:div
      #_[:pre (str savings-tag-months )]
      [budget-info/budget-info]
+     [controls]
      [shared/table
       [months-thead "Total" income-stats months]
       [budget-totals-tbody income-stats combined-budget-totals]
@@ -240,9 +273,4 @@
       [months-thead "Expense" expense-stats months]
       [budget-tbody :expense months expense-tag-months expense-stats]
       [budget-totals-tbody income-stats expense-budget-totals]]
-     [:div.buttons
-      [:button.button.is-danger.is-small
-       {:on-click (fn []
-                    (when (js/confirm "Clear?")
-                      (budget/clear-current-budget)))}
-       "Clear Budget"]]]))
+     [controls]]))

@@ -3,7 +3,9 @@
 
 
 (defn init-state [db localstore]
-  (assoc db ::current-budget (:current-budget localstore {})))
+  (assoc db
+         ::current-budget (:current-budget localstore {})
+         ::input-enabled? false))
 
 
 (rf/reg-event-fx
@@ -34,3 +36,19 @@
  ::current-budget
  (fn [db _]
    (::current-budget db {})))
+
+
+
+(rf/reg-event-db
+ ::toggle-enable-input
+ (fn [db _]
+   (update db ::input-enabled? not)))
+
+
+(defn toggle-enable-input []
+  (rf/dispatch [::toggle-enable-input]))
+
+(rf/reg-sub
+ ::input-enabled?
+ (fn [db _]
+   (::input-enabled? db false)))
