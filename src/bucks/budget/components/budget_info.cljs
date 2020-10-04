@@ -5,22 +5,24 @@
             [bucks.shared :as shared]))
 
 
-
-
 (defn budget-info []
-  (let [budget (->> @(rf/subscribe [::budget/current-budget])
-                    (vals)
-                    (map :amount-base)
-                    (group-by pos?)
-                    (map (fn [[p? e]]
-                           [p? (reduce + 0 e)]))
-                    (into {}))
-        income (get budget true)
-        expense (get budget false)
-        total (+ income expense)
-        n? (neg? total)]
+  (let [{:keys
+         [income
+          expense
+          savings]} (->> @(rf/subscribe [::budget/current-budget])
+         (map (fn [[k e]]
+                [k (->> (vals e)
+                        (map :amount-base)
+                        (reduce + 0))]))
+         (into {}))
+
+        total (+ income (- savings) expense)
+        n? (neg? total)
+
+        ]
     [:div.level
      [shared/level-item "income" (str "+" (utils/format-cents income)) :title-class "has-text-success"]
+     [shared/level-item "bucket" (utils/format-cents (- savings)) :title-class "has-text-warning"]
      [shared/level-item "expense" (utils/format-cents expense) :title-class "has-text-danger"]
      [shared/level-item "budget"
       (str "="

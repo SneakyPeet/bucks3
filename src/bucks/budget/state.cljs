@@ -10,12 +10,24 @@
  ::set-budget-item
  [(rf/inject-cofx :localstore)]
  (fn [{:keys [db localstore]} [_ item]]
-   {:db (assoc-in db [::current-budget (:id item)] item)
-    :localstore (assoc-in localstore [:current-budget (:id item)] item)}))
+   {:db (assoc-in db [::current-budget (:group item) (:id item)] item)
+    :localstore (assoc-in localstore [:current-budget (:group item) (:id item)] item)}))
 
 
 (defn set-budget-item [item]
   (rf/dispatch [::set-budget-item item]))
+
+
+(rf/reg-event-fx
+ ::clear-current-budget
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ item]]
+   {:db (assoc db ::current-budget {})
+    :localstore (assoc localstore :current-budget {})}))
+
+
+(defn clear-current-budget []
+  (rf/dispatch [::clear-current-budget]))
 
 
 (rf/reg-sub

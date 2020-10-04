@@ -23,10 +23,11 @@
 
 
 (defn- grouped-entries [entries]
-  (let [{:keys [income expense refund transfer]} (group-by :type entries)]
+  (let [{:keys [income expense refund transfer in out]} (group-by :type entries)]
     {:income income
      :transfer transfer
-     :expense (concat refund expense)}))
+     :expense (concat refund expense)
+     :savings (concat in out)}))
 
 
 (defn- entries-by-tag-by-month [available-tags entries]
@@ -52,7 +53,7 @@
                  :amount-base-p (utils/format-cents amount)})))))
 
 
-(defn- budget-tbody [months entry-tag-months stats]
+(defn- budget-tbody [group months entry-tag-months stats]
   (let [current-budget @(rf/subscribe [::budget/current-budget])
         tags (->> entry-tag-months
                   (map :tag)
@@ -72,7 +73,7 @@
              (let [[color label] tag
                    stats' (get stats tag)
                    label (if (empty? label) "un-tagged" label)
-                   budget-item (get current-budget label (budget.core/budget-item label color))]
+                   budget-item (get-in current-budget [group label] (budget.core/budget-item label group color))]
                [:tr {:key i}
                 [:th {:style {:border-left (str "10px solid " color) :color color}}
                  label]
@@ -99,7 +100,7 @@
                            {:key (str i "-" j)
                             :style {:cursor "pointer"}
                             :on-click #(budget/set-budget-item
-                                        (budget.core/budget-item label color
+                                        (budget.core/budget-item label group color
                                                                  :amount-base amount-base))}
                            amount-base-p]))))]))))]))
 
@@ -201,32 +202,47 @@
 
 (defn page []
   (let [budget-accounts @(rf/subscribe [::accounts/accounts-by-type :budget])
+        bucket-accounts @(rf/subscribe [::accounts/accounts-by-type :bucket])
         available-tags @(rf/subscribe [::tags.state/available-tags-map])
-        entries (-> budget-accounts all-entries grouped-entries)
-        income-tag-months (entries-by-tag-by-month available-tags (:income entries))
+        entries (-> (concat budget-accounts bucket-accounts) all-entries grouped-entries)
 
+        income-tag-months (entries-by-tag-by-month available-tags (:income entries))
         expense-tag-months (entries-by-tag-by-month available-tags (:expense entries))
-        months (->> (concat income-tag-months expense-tag-months)
+        savings-tag-months (entries-by-tag-by-month available-tags (:savings entries))
+
+        months (->> (concat income-tag-months expense-tag-months savings-tag-months)
                     (map :month)
                     set
                     sort
                     reverse)
         income-stats (stats months income-tag-months)
         expense-stats (stats months expense-tag-months)
+        savings-stats (stats months savings-tag-months)
         income-budget-totals (budget-totals months income-tag-months)
         expense-budget-totals (budget-totals months expense-tag-months)
+        savings-budget-totals (budget-totals months savings-tag-months)
         combined-budget-totals (combined-totals income-budget-totals expense-budget-totals)]
     [:div
-                                        ;[:pre (str (stats months income-tag-months))]
+     #_[:pre (str savings-tag-months )]
      [budget-info/budget-info]
      [shared/table
       [months-thead "Total" income-stats months]
       [budget-totals-tbody income-stats combined-budget-totals]
       [space]
       [months-thead "Income" income-stats months]
-      [budget-tbody months income-tag-months income-stats]
+      [budget-tbody :income months income-tag-months income-stats]
       [budget-totals-tbody income-stats income-budget-totals]
       [space]
+      [months-thead "Savings" savings-stats months]
+      [budget-tbody :savings months savings-tag-months savings-stats]
+      [budget-totals-tbody savings-stats savings-budget-totals]
+      [space]
       [months-thead "Expense" expense-stats months]
-      [budget-tbody months expense-tag-months expense-stats]
-      [budget-totals-tbody income-stats expense-budget-totals]]]))
+      [budget-tbody :expense months expense-tag-months expense-stats]
+      [budget-totals-tbody income-stats expense-budget-totals]]
+     [:div.buttons
+      [:button.button.is-danger.is-small
+       {:on-click (fn []
+                    (when (js/confirm "Clear?")
+                      (budget/clear-current-budget)))}
+       "Clear Budget"]]]))
