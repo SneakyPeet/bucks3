@@ -5,18 +5,21 @@
 (rf/reg-event-db
  ::go-to-page
  (fn [db [_ page]]
-   (assoc db
-          ::current-page page
-          ::previous-page (::current-page db))))
+   (let [history (::history db [])]
+     (assoc db
+            ::current-page page
+            ::history (conj history (::current-page db))))))
 
 
 (rf/reg-event-db
  ::go-to-previous-page
  (fn [db _]
-   (when-let [p (::previous-page db)]
-     (-> db
-         (assoc ::current-page p)
-         (dissoc ::previous-page)))))
+   (let [history (::history db [])]
+     (if (empty? history)
+       (assoc db ::current-page :accounts)
+       (-> db
+           (assoc ::current-page (peek history))
+           (update ::history pop))))))
 
 
 (defn go-to-page [p]

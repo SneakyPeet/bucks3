@@ -6,6 +6,8 @@
             [bucks.tags.state :as tags.state]
             [bucks.shared :as shared]
             [bucks.tags.components.tag-input :as tag-input]
+            [bucks.budget.components.budget-input :as budget-input]
+            [bucks.budget.components.clear-budget :as clear-budget]
             [bucks.utils :as utils]))
 
 
@@ -42,7 +44,10 @@
       [:button.button.is-danger.is-small
        {:disabled disabled?
         :on-click #(add :expense)}
-       "Add Expense"]]]))
+       "Add Expense"]
+      [budget-input/toggle]
+      [clear-budget/clear]]]))
+
 
 
 (defn budget-table []
@@ -52,19 +57,14 @@
                     (reduce +))
         expense (->> (vals savings)
                      (concat (vals expense))
-                     (map (fn [e]
-                            (let [ab (- (Math/abs (:amount-base e)))]
-                              (-> e
-                                  (assoc :amount-base ab
-                                         :amount-base-p (utils/format-cents ab)
-                                         :precentage (Math/abs (/ (Math/round (* 10000 (/ ab income))) 100)))))))
-                     (sort-by (juxt :color :amount-base )))
+                     (map #(assoc % :percentage (utils/percentage (:amount-base %) income)))
+                     (sort-by (juxt :color :amount-base)))
         {:keys [total total-p]} (->> expense
                                      (reduce
-                                      (fn [r {:keys [amount-base precentage]}]
+                                      (fn [r {:keys [amount-base percentage]}]
                                         (-> r
                                             (update :total + amount-base)
-                                            (update :total-p + precentage)))
+                                            (update :total-p + percentage)))
                                       {:total 0
                                        :total-p 0}))
         available (+ income total)]
@@ -72,22 +72,23 @@
      [:tbody
       (->> expense
            (map-indexed
-            (fn [i {:keys [id amount-base-p color group precentage] :as item}]
+            (fn [i {:keys [id color group amount-base percentage] :as item}]
               [:tr {:key i}
                [:th {:style {:color color}} id
                 (when (= :savings group) [:small.has-text-grey-light " (saving)"])]
-               [:td.has-text-right amount-base-p]
-               [:td.has-text-right precentage "%"]
+               [:td.has-text-right
+                [budget-input/input item]]
+               [:td.has-text-right percentage "%"]
                [:td [:a.has-text-danger
                      {:on-click
                       (fn []
                         (when (js/confirm "Remove?")
-                          (budget/remove-budget-item item)))}
+                          (budget/remove-budget-item (dissoc item :percentage))))}
                      "remove"]]])))
       [:tr
        [:th.has-text-danger "total"]
        [:th.has-text-right (utils/format-cents total)]
-       [:th.has-text-right total-p "%"]]
+       [:th.has-text-right (utils/round total-p) "%"]]
       [:tr
        [:th.has-text-success "available"]
        [:th.has-text-right

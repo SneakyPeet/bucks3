@@ -11,5 +11,4 @@
         account-name @(rf/subscribe [::accounts/account-name selected-account])]
     [shared/heading
      (if sub-heading (str account-name " | " sub-heading) account-name)
-     [shared/back "back"
-      #(pages/go-to-page back-page)]]))
+     [shared/back "back"]]))

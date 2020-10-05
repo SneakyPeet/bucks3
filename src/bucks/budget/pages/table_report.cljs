@@ -9,6 +9,8 @@
             [bucks.budget.state :as budget]
             [bucks.budget.core :as budget.core]
             [bucks.budget.components.budget-info :as budget-info]
+            [bucks.budget.components.budget-input :as budget-input]
+            [bucks.budget.components.clear-budget :as clear-budget]
             ["simple-statistics" :refer (mean quantile sum)]))
 
 
@@ -66,33 +68,12 @@
              (let [[color label] tag
                    stats' (get stats tag)
                    label (if (empty? label) "un-tagged" label)
-                   budget-item (get-in current-budget [group label] (budget.core/budget-item label group color))
-                   amount-base (:amount-base budget-item 0)]
+                   budget-item (get-in current-budget [group label] (budget.core/budget-item label group color))]
                [:tr {:key i}
                 [:th {:style {:border-left (str "10px solid " color) :color color}}
                  label]
                 [:th.has-text-right
-                 (if input-enabled?
-                   (let [v (/ amount-base 100)]
-                     [:input.input.is-small
-                      {:type "number"
-                       :style {:min-width "6rem"}
-                       :value v
-                       :on-change (fn [e]
-                                    (let [v (-> (.. e -target -value)
-                                                js/parseFloat
-                                                (* 100)
-                                                (Math/round))]
-                                      (budget/set-budget-item
-                                       (budget.core/set-stat budget-item :custom v))))}])
-                   (when-not (or (zero? amount-base) (nil? amount-base))
-                     [:span
-                      {:style {:color
-                               (case (:stat budget-item)
-                                 :none "#0065ff"
-                                 :custom "#880eaf"
-                                 "#72beff")}}
-                      (utils/format-cents (:amount-base budget-item))]))]
+                 [budget-input/input budget-item]]
                 (->> stats'
                      (map-indexed
                       (fn [i [k v]]
@@ -213,16 +194,9 @@
 
 
 (defn- controls []
-  (let [input-enabled? @(rf/subscribe [::budget/input-enabled?])]
-    [:div.buttons
-     [:button.button.is-small
-      {:on-click #(budget/toggle-enable-input)}
-      (if input-enabled? "Disable" "Enable") " input"]
-     [:button.button.is-danger.is-small
-      {:on-click (fn []
-                   (when (js/confirm "Clear?")
-                     (budget/clear-current-budget)))}
-      "Clear Budget"]]))
+  [:div.buttons
+   [budget-input/toggle]
+   [clear-budget/clear]])
 
 
 (defn page []

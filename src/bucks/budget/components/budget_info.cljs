@@ -16,14 +16,14 @@
                         (reduce + 0))]))
          (into {}))
 
-        total (+ income (- savings) expense)
+        total (- income savings expense)
         n? (neg? total)
 
         ]
     [:div.level
      [shared/level-item "income" (str "+" (utils/format-cents income)) :title-class "has-text-success"]
      [shared/level-item "bucket" (utils/format-cents (- savings)) :title-class "has-text-warning"]
-     [shared/level-item "expense" (utils/format-cents expense) :title-class "has-text-danger"]
+     [shared/level-item "expense" (utils/format-cents (- expense)) :title-class "has-text-danger"]
      [shared/level-item "budget"
       (str "="
            (utils/format-cents total)) :title-class (if n?
