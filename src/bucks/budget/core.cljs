@@ -1,4 +1,17 @@
-(ns bucks.budget.core)
+(ns bucks.budget.core
+  (:require [clojure.string :as string]))
+
+
+(defn group-tags [available-tags tags]
+  (let [tags (->> tags
+                  sort
+                  (map (fn [id]
+                         (get available-tags id))))
+        color (:color (first tags) "black")
+        tag (->> (map :label tags)
+                 sort
+                 (string/join " - "))]
+    {:tag tag :color color}))
 
 
 (defn budget-item [id group color & {:keys [stat amount-base]

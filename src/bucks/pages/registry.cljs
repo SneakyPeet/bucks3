@@ -10,7 +10,8 @@
             [bucks.tags.pages.tag-entries :as tag-entries]
             [bucks.options.pages.manage :as options]
             [bucks.import.pages.view-import :as view-import]
-            [bucks.budget.pages.table-report :as budget-table-report]))
+            [bucks.budget.pages.table-report :as budget-table-report]
+            [bucks.budget.pages.budget :as budget]))
 
 (defn init-state [state]
   (assoc state ::pages/current-page :accounts))
@@ -20,6 +21,7 @@
   {:accounts "accounts"
    :manage-tags "tags"
    :manage-options "options"
+   :budget "budget"
    :budget-table "budget:planning"})
 
 
@@ -53,6 +55,7 @@
 
       :manage-options [wrap-menu [options/page]]
 
+      :budget [wrap-menu [budget/page]]
       :budget-table [wrap-menu [budget-table-report/page]]
       [:div.has-text-danger
        "Page not defined: " (str current-page)])))

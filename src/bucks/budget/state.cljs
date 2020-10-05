@@ -21,6 +21,18 @@
 
 
 (rf/reg-event-fx
+ ::remove-budget-item
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ item]]
+   {:db (update-in db [::current-budget (:group item)] dissoc (:id item))
+    :localstore (update-in localstore [:current-budget (:group item)] dissoc (:id item))}))
+
+
+(defn remove-budget-item [item]
+  (rf/dispatch [::remove-budget-item item]))
+
+
+(rf/reg-event-fx
  ::clear-current-budget
  [(rf/inject-cofx :localstore)]
  (fn [{:keys [db localstore]} [_ item]]

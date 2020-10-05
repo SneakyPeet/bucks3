@@ -32,14 +32,7 @@
 (defn- entries-by-tag-by-month [available-tags entries]
   (->> entries
        (map (fn [e]
-              (let [tags (->> (:tags e)
-                              sort
-                              (map (fn [id]
-                                     (get available-tags id))))
-                    color (:color (first tags) "black")
-                    tag (->> (map :label tags)
-                             sort
-                             (string/join " - "))]
+              (let [{:keys [tag color]} (budget.core/group-tags available-tags (:tags e))]
                 (assoc e :tag [color tag]))))
        (group-by (juxt entry-month :tag))
        (map (fn [[[month tag] entries]]
