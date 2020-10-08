@@ -64,3 +64,14 @@
  ::input-enabled?
  (fn [db _]
    (::input-enabled? db false)))
+
+
+(rf/reg-sub
+ ::income-budgeted
+ :<- [::current-budget]
+ (fn [budget _]
+   (->> budget
+        :income
+        vals
+        (map :amount-base)
+        (reduce +))))

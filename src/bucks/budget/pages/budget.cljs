@@ -8,7 +8,10 @@
             [bucks.tags.components.tag-input :as tag-input]
             [bucks.budget.components.budget-input :as budget-input]
             [bucks.budget.components.clear-budget :as clear-budget]
-            [bucks.utils :as utils]))
+            [bucks.charts :as charts]
+            [bucks.utils :as utils]
+            [clojure.string :as string]
+            [cljs-bean.core :refer [->clj]]))
 
 
 (rf/reg-event-db
@@ -51,10 +54,8 @@
 
 
 (defn budget-table []
-  (let [{:keys [savings income expense]} @(rf/subscribe [::budget/current-budget])
-        income (->> (vals income)
-                    (map :amount-base)
-                    (reduce +))
+  (let [{:keys [savings expense]} @(rf/subscribe [::budget/current-budget])
+        income @(rf/subscribe [::budget/income-budgeted])
         expense (->> (vals savings)
                      (concat (vals expense))
                      (map #(assoc % :percentage (utils/percentage (:amount-base %) income)))
@@ -67,7 +68,7 @@
                                             (update :total-p + percentage)))
                                       {:total 0
                                        :total-p 0}))
-        available (+ income total)]
+        available (- income total)]
     [shared/table
      [:tbody
       (->> expense
@@ -86,7 +87,7 @@
                           (budget/remove-budget-item (dissoc item :percentage))))}
                      "remove"]]])))
       [:tr
-       [:th.has-text-danger "total"]
+       [:th "total"]
        [:th.has-text-right (utils/format-cents total)]
        [:th.has-text-right (utils/round total-p) "%"]]
       [:tr
@@ -95,10 +96,72 @@
         {:class (if (neg? available) "has-text-danger" "has-text-success")}
         (utils/format-cents available)]]]]))
 
+(defn- tooltip [d]
+  (let [items (->> (:payload (->clj d))
+                   first
+                   :payload
+                   :items)]
+    (->> items
+         (map #(str (:id %) ": " (utils/format-cents (:amount-base %))))
+         (string/join "\n")))
+  )
+
+(defn- bar []
+  (let [{:keys [savings income expense]} @(rf/subscribe [::budget/current-budget])
+        income @(rf/subscribe [::budget/income-budgeted])
+        income (/ income 100)
+
+        values (->> (vals expense)
+                    (concat (vals savings))
+                    (group-by :color)
+                    (map (fn [[color e]]
+                           {:id (keyword (str "_" (string/replace color #"#" "")))
+                            :color color
+                            :fill color
+                            :items (->> e
+                                        (map #(select-keys % [:id :amount-base])))
+                            :total (/ (->> e
+                                           (map :amount-base)
+                                           (reduce +)
+                                           Math/abs) 100)}))
+                    (filter #(not (zero? (:total %))))
+                    (sort-by :color)
+                    reverse)
+        data (->> values
+                  (map (juxt :id :total))
+                  (into {}))
+        expense-bar (assoc data :name "Budget")
+        income-bar {:name "Income" :income income}]
+    [:div
+     [:div
+      [charts/bar-chart {:width 200 :height 400
+                         :data (clj->js [income-bar expense-bar])}
+       [charts/x-axis {:dataKey "name"}]
+       [charts/y-axis]
+       [charts/reference-line {:y income :stroke "red" :strokeDasharray "3 3"
+                               :isFront true :strokeWidth 2}]
+       [charts/bar {:id :income :dataKey :income :stackId "a" :fill "green"}]
+       (->> values
+            (map-indexed
+             (fn [i {:keys [id color]}]
+               [charts/bar {:key i :id id :dataKey id :stackId "a" :fill color}])))]]
+     [:div
+      [charts/responsive-container {:width "100%" :height 200}
+       [charts/bar-chart {:data (clj->js values)}
+        [charts/y-axis]
+        [charts/cartesian-grid {:strokeDasharray "3 3"}]
+        [charts/tooltip {:content tooltip}]
+        [charts/bar {:dataKey :total}]]]]]))
 
 
 (defn page []
-  [:div
-   [budget-table]
-   [:hr]
-   [add-budget-items]])
+  [:div.columns
+   [:div.column.is-narrow
+    [budget-table]
+    [:hr]
+    [add-budget-items]]
+   [:div.column
+    [bar]
+    #_[charts/bar-chart {:width 730 :height 200 :data (clj->js [{:name "test" :uv 123 :pv 234}])}
+     [charts/bar {:dataKey "uv" :fill "#efefef"}]
+     [charts/bar {:dataKey "pv" :fill "#efefef"}]]]])
