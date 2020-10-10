@@ -31,7 +31,7 @@
      :savings (concat in out)}))
 
 
-(defn- entries-by-tag-by-month [available-tags entries]
+(defn- entries-by-tag-by-month [available-tags entries & {:keys [m] :or {m 1}}]
   (->> entries
        (map (fn [e]
               (let [{:keys [tag color]} (budget.core/group-tags available-tags (:tags e))]
@@ -40,7 +40,8 @@
        (map (fn [[[month tag] entries]]
               (let [amount (->> entries
                                 (map :amount-base)
-                                (reduce + 0))]
+                                (reduce + 0)
+                                (* m))]
                 {:month month
                  :tag tag
                  :amount-base amount
@@ -111,26 +112,31 @@
                    :amount-base-p (utils/format-cents amount)}))))))
 
 
-(defn- budget-totals-tbody [stats months]
+(defn- budget-totals-tbody [stats & rows]
   [:tbody
-   [:tr {:style {:border-bottom "solid 1px black"
-                 :border-top "solid 1px black"}}
-    [:th] [:th]
+   (->> rows
+        (partition-all 3)
+        (map-indexed
+         (fn [j [t months b]]
+           [:tr {:key j
+                 :style {:border-bottom "solid 1px black"
+                         :border-top (str "solid " (if (= :t b) 2 1) "px black")}}
+            [:th t] [:th]
 
-    (->> stats
-         first last
-         (map-indexed
-          (fn [i _]
-            [:th {:key i}])))
+            (->> stats
+                 first last
+                 (map-indexed
+                  (fn [i _]
+                    [:th {:key i}])))
 
-    (->> months
-         (map-indexed
-          (fn [i {:keys [month amount-base-p amount-base]}]
-            [:th.has-text-right
-             {:key i
-              :class (if (neg? amount-base)
-                       "has-text-danger" "has-text-success")}
-             amount-base-p])))]])
+            (->> months
+                 (map-indexed
+                  (fn [i {:keys [month amount-base-p amount-base]}]
+                    [:th.has-text-right
+                     {:key i
+                      :class (if (neg? amount-base)
+                               "has-text-danger" "has-text-success")}
+                     (when-not (zero? amount-base) amount-base-p)])))])))])
 
 
 (defn- months-thead [heading stats months]
@@ -155,14 +161,19 @@
     [:th {:style {:height "2.5rem"}} ]]])
 
 
-(defn- combined-totals [income-totals expense-totals]
-  (let [e-map (->> expense-totals
-                   (map (juxt :month :amount-base))
-                   (into {}))]
-    (->> income-totals
-         (map (fn [m]
-                (let [a (+ (:amount-base m) (get e-map (:month m)))]
-                  (assoc m :amount-base a :amount-base-p (utils/format-cents a))))))))
+(defn- combined-totals [& totals]
+  (->> totals
+       (reduce into)
+       (group-by :month)
+       (map (fn [[m e]]
+              (let [a (->> e
+                           (map :amount-base)
+                           (reduce +))]
+                {:month m
+                 :amount-base a
+                 :amount-base-p (utils/format-cents a)})))
+       (sort-by :month)
+       reverse))
 
 
 (defn- stats [months entry-tag-month]
@@ -207,7 +218,7 @@
 
         income-tag-months (entries-by-tag-by-month available-tags (:income entries))
         expense-tag-months (entries-by-tag-by-month available-tags (:expense entries))
-        savings-tag-months (entries-by-tag-by-month available-tags (:savings entries))
+        savings-tag-months (entries-by-tag-by-month available-tags (:savings entries) :m -1)
 
         months (->> (concat income-tag-months expense-tag-months savings-tag-months)
                     (map :month)
@@ -220,24 +231,29 @@
         income-budget-totals (budget-totals months income-tag-months)
         expense-budget-totals (budget-totals months expense-tag-months)
         savings-budget-totals (budget-totals months savings-tag-months)
-        combined-budget-totals (combined-totals income-budget-totals expense-budget-totals)]
+        combined-expense-totals (combined-totals expense-budget-totals savings-budget-totals)
+        combined-budget-totals (combined-totals income-budget-totals expense-budget-totals savings-budget-totals)]
     [:div
-     #_[:pre (str savings-tag-months )]
      [budget-info/budget-info]
      [controls]
      [shared/table
       [months-thead "Total" income-stats months]
-      [budget-totals-tbody income-stats combined-budget-totals]
+      [budget-totals-tbody income-stats
+       "income" income-budget-totals :_
+       "savings" savings-budget-totals :_
+       "expense" expense-budget-totals :_
+       "Spent" combined-expense-totals :t
+       "Balance" combined-budget-totals :_]
       [space]
       [months-thead "Income" income-stats months]
       [budget-tbody :income months income-tag-months income-stats]
-      [budget-totals-tbody income-stats income-budget-totals]
+      [budget-totals-tbody income-stats "" income-budget-totals]
       [space]
       [months-thead "Savings" savings-stats months]
       [budget-tbody :savings months savings-tag-months savings-stats]
-      [budget-totals-tbody savings-stats savings-budget-totals]
+      [budget-totals-tbody savings-stats "" savings-budget-totals]
       [space]
       [months-thead "Expense" expense-stats months]
       [budget-tbody :expense months expense-tag-months expense-stats]
-      [budget-totals-tbody income-stats expense-budget-totals]]
+      [budget-totals-tbody income-stats "" expense-budget-totals]]
      [controls]]))

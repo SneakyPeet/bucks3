@@ -44,21 +44,19 @@
                   (#{:in :out} (:type e)) (update :amount-base * -1)))))
        (group-by entry-month )
        (map (fn [[month entries]]
-              (let [color-amounts (->> entries
-                                       (group-by :color)
-                                       (map (fn [[color e]]
-                                              [(get groups color (color-id color))
-                                                (->> e
-                                                     (map (comp #(/ % 100) :amount-base))
-                                                     (filter neg?)
-                                                     (reduce + 0)
-                                                     Math/abs
-                                                     utils/round)]))
-                                       (filter (comp pos? second))
-                                       (into {}))]
-                (assoc color-amounts :name month))))
-       (sort-by :name)
-       reverse))
+              (->> entries
+                   (group-by :color)
+                   (map (fn [[color e]]
+                          {:id (get groups color (color-id color))
+                           :color color
+                           :amount (->> e
+                                        (map (comp #(/ % 100) :amount-base))
+                                        (reduce + 0)
+                                        Math/abs
+                                        utils/round)
+                           :month month}))
+                   #_(filter (comp pos? :amount)))))
+       (reduce into)))
 
 
 (defn- add-budget-items []
@@ -174,10 +172,21 @@
         budget-accounts @(rf/subscribe [::accounts/accounts-by-type :budget])
         bucket-accounts @(rf/subscribe [::accounts/accounts-by-type :bucket])
 
-        entry-bars (->> (into budget-accounts bucket-accounts)
-                        (map (comp vals :entries))
-                        (reduce into)
-                        (chart-entries-by-color-by-month available-tags groups))
+        entries (->> (into budget-accounts bucket-accounts)
+                     (map (comp vals :entries))
+                     (reduce into)
+                     (chart-entries-by-color-by-month available-tags groups))
+        entry-bars (->> entries
+                        (group-by :month)
+                        (map (fn [[month e]]
+                               (assoc
+                                (->> e
+                                     (map (juxt :id :amount))
+                                     (into {}))
+                                :name month
+                                :total (->> e (map :amount) (reduce +) Math/round))))
+                        (sort-by :name)
+                        reverse)
 
         values (->> (vals expense)
                     (concat (vals savings))
@@ -192,17 +201,25 @@
                                            (map :amount-base)
                                            (reduce +)
                                            Math/abs) 100)}))
-                    (filter #(not (zero? (:total %))))
-                    (sort-by :color)
-                    (reverse))
+                    (filter #(not (zero? (:total %)))))
+        total-budgeted (->> values
+                            (map :total)
+                            (reduce +)
+                            Math/round)
         data (->> values
                   (map (juxt :id :total))
                   (into {}))
-        expense-bar (assoc data :name "Budget")
-        income-bar {:name "Income" :income income}]
+        expense-bar (assoc data :name "Budget" :total total-budgeted)
+        income-bar {:name "Income" :income income}
+        combined-values (->> (into entries values)
+                             (map #(select-keys % [:id :color]))
+                             set
+                             (sort-by :color)
+                             reverse)
+        cv-t (dec (count combined-values))]
     [:div
      [:div
-      [charts/responsive-container {:width "100%" :height 600}
+      [charts/responsive-container {:width "100%" :height 500}
        [charts/bar-chart {:data (clj->js (into [income-bar expense-bar] entry-bars))}
         [charts/x-axis {:dataKey "name"}]
         [charts/y-axis]
@@ -211,11 +228,16 @@
         [charts/tooltip]
         [charts/brush {:dataKey "name" :height 30 :stroke "#8884d8"}]
         [charts/cartesian-grid {:strokeDasharray "3 3"}]
-        [charts/bar {:id :income :dataKey :income :stackId "a" :fill "green"}]
-        (->> values
+        [charts/bar {:id :income :dataKey :income :stackId "a" :fill "green"}
+         [charts/label-list {:dataKey "income" :position "top"}]]
+        (->> combined-values
              (map-indexed
               (fn [i {:keys [id color]}]
-                [charts/bar {:key i :id id :dataKey id :stackId "a" :fill color}])))]]]
+                [charts/bar {:key i :id id :dataKey id :stackId "a" :fill color}
+                 (prn cv-t i)
+                 (when (= cv-t i)
+                   [charts/label-list {:dataKey "total" :position "top"}])])))]]]
+
      [:div
       [charts/responsive-container {:width "100%" :height 200}
        [charts/bar-chart {:data (clj->js values)}
