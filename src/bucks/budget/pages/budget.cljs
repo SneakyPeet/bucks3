@@ -35,7 +35,7 @@
   (keyword (str "_" (string/replace color #"#" ""))))
 
 
-(defn- chart-entries-by-color-by-month [available-tags entries]
+(defn- chart-entries-by-color-by-month [available-tags groups entries]
   (->> entries
        (filter #(#{:expense :refund :in :out} (:type %)))
        (map (fn [e]
@@ -47,12 +47,13 @@
               (let [color-amounts (->> entries
                                        (group-by :color)
                                        (map (fn [[color e]]
-                                              [(color-id color) (->> e
-                                                                     (map (comp #(/ % 100) :amount-base))
-                                                                     (filter neg?)
-                                                                     (reduce + 0)
-                                                                     Math/abs
-                                                                     utils/round)]))
+                                              [(get groups color (color-id color))
+                                                (->> e
+                                                     (map (comp #(/ % 100) :amount-base))
+                                                     (filter neg?)
+                                                     (reduce + 0)
+                                                     Math/abs
+                                                     utils/round)]))
                                        (filter (comp pos? second))
                                        (into {}))]
                 (assoc color-amounts :name month))))
@@ -89,6 +90,7 @@
 
 (defn budget-table []
   (let [{:keys [savings expense]} @(rf/subscribe [::budget/current-budget])
+        groups @(rf/subscribe [::tags.state/tag-group-color-names])
         income @(rf/subscribe [::budget/income-budgeted])
         expense (->> (vals savings)
                      (concat (vals expense))
@@ -110,6 +112,18 @@
            (map-indexed
             (fn [j [color items]]
               [:<> {:key j}
+               (let [{:keys [total p]} (reduce
+                                        (fn [r {:keys [amount-base percentage]}]
+                                          (-> r
+                                              (update :total + amount-base)
+                                              (update :p + percentage)))
+                                        {:total 0 :p 0}
+                                        items)]
+                 [:tr {:style {:border-top (str "solid 2px " color)}}
+                  [:th {:style {:color color}} (get groups color "")]
+                  [:th.has-text-right {:style {:color color}} (utils/format-cents total)]
+                  [:th.has-text-right {:style {:color color}} (utils/round p) "%"]
+                  [:td]])
                (->>
                 items
                 (sort-by :amount-base)
@@ -128,18 +142,7 @@
                              (when (js/confirm "Remove?")
                                (budget/remove-budget-item (dissoc item :percentage))))}
                           "remove"]]])))
-               (let [{:keys [total p]} (reduce
-                                        (fn [r {:keys [amount-base percentage]}]
-                                          (-> r
-                                              (update :total + amount-base)
-                                              (update :p + percentage)))
-                                        {:total 0 :p 0}
-                                        items)]
-                 [:tr {:style {:border-bottom (str "solid 2px " color)}}
-                  [:td]
-                  [:td.has-text-right [:strong {:style {:color color}} (utils/format-cents total)]]
-                  [:td.has-text-right [:strong {:style {:color color}} (utils/round p) "%"]]
-                  [:td]])])))
+               ])))
       [:tr
        [:th "total"]
        [:th.has-text-right (utils/format-cents total)]
@@ -163,6 +166,7 @@
 
 (defn- bar []
   (let [available-tags @(rf/subscribe [::tags.state/available-tags-map])
+        groups @(rf/subscribe [::tags.state/tag-group-color-names])
         {:keys [savings income expense]} @(rf/subscribe [::budget/current-budget])
         income @(rf/subscribe [::budget/income-budgeted])
         income (/ income 100)
@@ -173,13 +177,13 @@
         entry-bars (->> (into budget-accounts bucket-accounts)
                         (map (comp vals :entries))
                         (reduce into)
-                        (chart-entries-by-color-by-month available-tags))
+                        (chart-entries-by-color-by-month available-tags groups))
 
         values (->> (vals expense)
                     (concat (vals savings))
                     (group-by :color)
                     (map (fn [[color e]]
-                           {:id (color-id color)
+                           {:id (get groups color (color-id color))
                             :color color
                             :fill color
                             :items (->> e
@@ -216,6 +220,7 @@
       [charts/responsive-container {:width "100%" :height 200}
        [charts/bar-chart {:data (clj->js values)}
         [charts/y-axis]
+        [charts/x-axis {:dataKey "id"}]
         [charts/cartesian-grid {:strokeDasharray "3 3"}]
         [charts/tooltip {:content tooltip}]
         [charts/bar {:dataKey :total}]]]]]))

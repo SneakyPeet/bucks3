@@ -5,7 +5,10 @@
 
 
 (defn init-state [db localstore]
-  (assoc db ::available-tags (:available-tags localstore {})))
+  (assoc db
+         ::available-tags (:available-tags localstore {})
+         ::tag-groups (:tag-groups localstore {})))
+
 
 (rf/reg-sub
  ::available-tags
@@ -117,3 +120,46 @@
           (reduce into)
           (sort-by :date)
           reverse))))
+
+
+(rf/reg-sub
+ ::tag-groups-map
+ (fn [db _]
+   (->> (::tag-groups db))))
+
+
+(rf/reg-sub
+ ::tag-groups
+ :<- [::tag-groups-map]
+ (fn [g _]
+   (vals g)))
+
+
+(rf/reg-sub
+ ::tag-group-color-names
+ :<- [::tag-groups]
+ (fn [g _]
+   (->> g
+        (map (juxt :color :name))
+        (into {}))))
+
+
+(rf/reg-event-fx
+ ::update-tag-group
+ [(rf/inject-cofx :localstore)]
+ (fn [{:keys [db localstore]} [_ group]]
+   {:db (assoc-in db [::tag-groups (:id group)] group)
+    :localstore (assoc-in localstore [:tag-groups (:id group)] group)}))
+
+
+(defn add-tag-group []
+  (rf/dispatch [::update-tag-group (tags.core/new-tag-group "black" "Default")]))
+
+
+(defn edit-tag-group-name [tag new-name]
+  (prn tag new-name)
+  (rf/dispatch [::update-tag-group (assoc tag :name new-name)]))
+
+
+(defn edit-tag-group-color [tag new-color]
+  (rf/dispatch [::update-tag-group (assoc tag :color new-color)]))
