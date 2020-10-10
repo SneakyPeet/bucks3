@@ -4,6 +4,7 @@
             [bucks.budget.state :as budget]
             [bucks.budget.core :as budget.core]
             [bucks.tags.state :as tags.state]
+            [bucks.accounts.state :as accounts]
             [bucks.shared :as shared]
             [bucks.tags.components.tag-input :as tag-input]
             [bucks.budget.components.budget-input :as budget-input]
@@ -24,6 +25,39 @@
  ::tags
  (fn [db _]
    (::tags db [])))
+
+
+(defn- entry-month [e]
+  (utils/date->month (:date e)))
+
+
+(defn- color-id [color]
+  (keyword (str "_" (string/replace color #"#" ""))))
+
+
+(defn- chart-entries-by-color-by-month [available-tags entries]
+  (->> entries
+       (filter #(#{:expense :refund :in :out} (:type %)))
+       (map (fn [e]
+              (let [{:keys [tag color]} (budget.core/group-tags available-tags (:tags e))]
+                (cond-> (assoc e :color color)
+                  (#{:in :out} (:type e)) (update :amount-base * -1)))))
+       (group-by entry-month )
+       (map (fn [[month entries]]
+              (let [color-amounts (->> entries
+                                       (group-by :color)
+                                       (map (fn [[color e]]
+                                              [(color-id color) (->> e
+                                                                     (map (comp #(/ % 100) :amount-base))
+                                                                     (filter neg?)
+                                                                     (reduce + 0)
+                                                                     Math/abs
+                                                                     utils/round)]))
+                                       (filter (comp pos? second))
+                                       (into {}))]
+                (assoc color-amounts :name month))))
+       (sort-by :name)
+       reverse))
 
 
 (defn- add-budget-items []
@@ -58,8 +92,7 @@
         income @(rf/subscribe [::budget/income-budgeted])
         expense (->> (vals savings)
                      (concat (vals expense))
-                     (map #(assoc % :percentage (utils/percentage (:amount-base %) income)))
-                     (sort-by (juxt :color :amount-base)))
+                     (map #(assoc % :percentage (utils/percentage (:amount-base %) income))))
         {:keys [total total-p]} (->> expense
                                      (reduce
                                       (fn [r {:keys [amount-base percentage]}]
@@ -72,20 +105,41 @@
     [shared/table
      [:tbody
       (->> expense
+           (group-by :color)
+           (sort-by first)
            (map-indexed
-            (fn [i {:keys [id color group amount-base percentage] :as item}]
-              [:tr {:key i}
-               [:th {:style {:color color}} id
-                (when (= :savings group) [:small.has-text-grey-light " (saving)"])]
-               [:td.has-text-right
-                [budget-input/input item]]
-               [:td.has-text-right percentage "%"]
-               [:td [:a.has-text-danger
-                     {:on-click
-                      (fn []
-                        (when (js/confirm "Remove?")
-                          (budget/remove-budget-item (dissoc item :percentage))))}
-                     "remove"]]])))
+            (fn [j [color items]]
+              [:<> {:key j}
+               (->>
+                items
+                (sort-by :amount-base)
+                reverse
+                (map-indexed
+                 (fn [i {:keys [id color group amount-base percentage] :as item}]
+                   [:tr {:key i}
+                    [:th {:style {:color color}} id
+                     (when (= :savings group) [:small.has-text-grey-light " (saving)"])]
+                    [:td.has-text-right
+                     [budget-input/input item]]
+                    [:td.has-text-right percentage "%"]
+                    [:td [:a.has-text-danger
+                          {:on-click
+                           (fn []
+                             (when (js/confirm "Remove?")
+                               (budget/remove-budget-item (dissoc item :percentage))))}
+                          "remove"]]])))
+               (let [{:keys [total p]} (reduce
+                                        (fn [r {:keys [amount-base percentage]}]
+                                          (-> r
+                                              (update :total + amount-base)
+                                              (update :p + percentage)))
+                                        {:total 0 :p 0}
+                                        items)]
+                 [:tr {:style {:border-bottom (str "solid 2px " color)}}
+                  [:td]
+                  [:td.has-text-right [:strong {:style {:color color}} (utils/format-cents total)]]
+                  [:td.has-text-right [:strong {:style {:color color}} (utils/round p) "%"]]
+                  [:td]])])))
       [:tr
        [:th "total"]
        [:th.has-text-right (utils/format-cents total)]
@@ -96,6 +150,7 @@
         {:class (if (neg? available) "has-text-danger" "has-text-success")}
         (utils/format-cents available)]]]]))
 
+
 (defn- tooltip [d]
   (let [items (->> (:payload (->clj d))
                    first
@@ -103,19 +158,28 @@
                    :items)]
     (->> items
          (map #(str (:id %) ": " (utils/format-cents (:amount-base %))))
-         (string/join "\n")))
-  )
+         (string/join "\n"))))
+
 
 (defn- bar []
-  (let [{:keys [savings income expense]} @(rf/subscribe [::budget/current-budget])
+  (let [available-tags @(rf/subscribe [::tags.state/available-tags-map])
+        {:keys [savings income expense]} @(rf/subscribe [::budget/current-budget])
         income @(rf/subscribe [::budget/income-budgeted])
         income (/ income 100)
+
+        budget-accounts @(rf/subscribe [::accounts/accounts-by-type :budget])
+        bucket-accounts @(rf/subscribe [::accounts/accounts-by-type :bucket])
+
+        entry-bars (->> (into budget-accounts bucket-accounts)
+                        (map (comp vals :entries))
+                        (reduce into)
+                        (chart-entries-by-color-by-month available-tags))
 
         values (->> (vals expense)
                     (concat (vals savings))
                     (group-by :color)
                     (map (fn [[color e]]
-                           {:id (keyword (str "_" (string/replace color #"#" "")))
+                           {:id (color-id color)
                             :color color
                             :fill color
                             :items (->> e
@@ -126,7 +190,7 @@
                                            Math/abs) 100)}))
                     (filter #(not (zero? (:total %))))
                     (sort-by :color)
-                    reverse)
+                    (reverse))
         data (->> values
                   (map (juxt :id :total))
                   (into {}))
@@ -134,17 +198,20 @@
         income-bar {:name "Income" :income income}]
     [:div
      [:div
-      [charts/bar-chart {:width 200 :height 400
-                         :data (clj->js [income-bar expense-bar])}
-       [charts/x-axis {:dataKey "name"}]
-       [charts/y-axis]
-       [charts/reference-line {:y income :stroke "red" :strokeDasharray "3 3"
-                               :isFront true :strokeWidth 2}]
-       [charts/bar {:id :income :dataKey :income :stackId "a" :fill "green"}]
-       (->> values
-            (map-indexed
-             (fn [i {:keys [id color]}]
-               [charts/bar {:key i :id id :dataKey id :stackId "a" :fill color}])))]]
+      [charts/responsive-container {:width "100%" :height 600}
+       [charts/bar-chart {:data (clj->js (into [income-bar expense-bar] entry-bars))}
+        [charts/x-axis {:dataKey "name"}]
+        [charts/y-axis]
+        [charts/reference-line {:y income :stroke "red" :strokeDasharray "3 3"
+                                :isFront true :strokeWidth 2}]
+        [charts/tooltip]
+        [charts/brush {:dataKey "name" :height 30 :stroke "#8884d8"}]
+        [charts/cartesian-grid {:strokeDasharray "3 3"}]
+        [charts/bar {:id :income :dataKey :income :stackId "a" :fill "green"}]
+        (->> values
+             (map-indexed
+              (fn [i {:keys [id color]}]
+                [charts/bar {:key i :id id :dataKey id :stackId "a" :fill color}])))]]]
      [:div
       [charts/responsive-container {:width "100%" :height 200}
        [charts/bar-chart {:data (clj->js values)}

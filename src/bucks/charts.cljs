@@ -5,7 +5,7 @@
                                 BarChart Bar
                                 LineChart Line
                                 ReferenceLine CartesianGrid
-                                Legend XAxis YAxis Tooltip)]))
+                                Legend XAxis YAxis Tooltip Brush)]))
 
 (def responsive-container (r/adapt-react-class ResponsiveContainer))
 (def composed-chart (r/adapt-react-class ComposedChart))
@@ -23,3 +23,4 @@
 (def y-axis (r/adapt-react-class YAxis))
 (def cartesian-grid (r/adapt-react-class CartesianGrid))
 (def tooltip (r/adapt-react-class Tooltip))
+(def brush (r/adapt-react-class Brush))
